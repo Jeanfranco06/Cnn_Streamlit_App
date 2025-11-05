@@ -269,6 +269,8 @@ def show_model_section(cnn_class, dataset_name, input_shape):
     """Muestra la sección de arquitectura del modelo"""
     st.header(f"🧠 Arquitectura del Modelo CNN - {dataset_name}")
 
+    st.info("💡 **Esta sección es informativa:** Explora diferentes arquitecturas de modelo y sus hiperparámetros. Los parámetros aquí no afectan el entrenamiento real.")
+
     col1, col2 = st.columns([1, 2])
 
     with col1:
