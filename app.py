@@ -822,7 +822,12 @@ with tab1:
 
     with cifar_tabs[3]:  # Evaluación
         if cifar_data_loader and cifar_data:
-            show_evaluation_section(cifar_data_loader, cifar_data, "CIFAR-10")
+            # Lazy loading - only run evaluation when tab is active
+            if st.session_state.get('cifar_eval_active', False) or st.button("🔍 Ejecutar Evaluación CIFAR-10", key="cifar_eval_btn"):
+                st.session_state['cifar_eval_active'] = True
+                show_evaluation_section(cifar_data_loader, cifar_data, "CIFAR-10")
+            else:
+                st.info("Haz clic en 'Ejecutar Evaluación' para ver las métricas del modelo.")
         else:
             st.error("No se pudieron cargar los datos de CIFAR-10.")
 
@@ -857,7 +862,12 @@ with tab2:
 
     with mnist_tabs[3]:  # Evaluación
         if mnist_data_loader and mnist_data:
-            show_evaluation_section(mnist_data_loader, mnist_data, "MNIST")
+            # Lazy loading - only run evaluation when tab is active
+            if st.session_state.get('mnist_eval_active', False) or st.button("🔍 Ejecutar Evaluación MNIST", key="mnist_eval_btn"):
+                st.session_state['mnist_eval_active'] = True
+                show_evaluation_section(mnist_data_loader, mnist_data, "MNIST")
+            else:
+                st.info("Haz clic en 'Ejecutar Evaluación' para ver las métricas del modelo.")
         else:
             st.error("No se pudieron cargar los datos de MNIST.")
 
