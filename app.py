@@ -491,7 +491,47 @@ def show_evaluation_section(data_loader, data, dataset_name):
     """Muestra la sección de evaluación del modelo"""
     st.header(f"📊 Evaluación del Modelo - {dataset_name}")
 
-    # Buscar modelos entrenados disponibles
+    # Seleccionar tipo de modelo para evaluación
+    model_options = ["basic", "advanced", "residual"]
+    selected_model_type = st.selectbox(
+        "Selecciona el tipo de modelo para evaluar:",
+        model_options,
+        key=f"eval_model_type_{dataset_name.lower()}"
+    )
+
+    # Explicación de las diferencias entre modelos
+    st.markdown("### 🔍 Diferencias entre Tipos de Modelo")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown("""
+        **🟢 Modelo Básico:**
+        - Arquitectura simple
+        - Menos parámetros
+        - Entrenamiento rápido
+        - Menor precisión
+        """)
+
+    with col2:
+        st.markdown("""
+        **🟡 Modelo Avanzado:**
+        - Capas Batch Normalization
+        - Regularización L2
+        - Mayor precisión
+        - Entrenamiento moderado
+        """)
+
+    with col3:
+        st.markdown("""
+        **🔴 Modelo Residual:**
+        - Conexiones residuales (skip)
+        - Mejor para datasets grandes
+        - Mayor precisión potencial
+        - Más parámetros y tiempo
+        """)
+
+    # Buscar el modelo específico seleccionado
     # Mapear nombres de dataset a nombres de directorio
     dataset_dir_map = {
         "CIFAR-10": "cifar10",
@@ -499,15 +539,26 @@ def show_evaluation_section(data_loader, data, dataset_name):
     }
     dataset_dir_name = dataset_dir_map.get(dataset_name, dataset_name.lower().replace("-", ""))
     dataset_models_dir = os.path.join("models", dataset_dir_name)
+
+    model_path = None
     if os.path.exists(dataset_models_dir):
-        model_files = [f for f in os.listdir(dataset_models_dir) if f.endswith("_trained.keras")]
-        if model_files:
-            # Usar el modelo más reciente (último en la lista alfabética)
-            model_path = os.path.join(dataset_models_dir, sorted(model_files)[-1])
+        # Buscar modelo entrenado del tipo seleccionado
+        trained_model = f"{selected_model_type}_trained.keras"
+        trained_path = os.path.join(dataset_models_dir, trained_model)
+
+        if os.path.exists(trained_path):
+            model_path = trained_path
         else:
-            model_path = os.path.join(dataset_models_dir, "advanced_model.keras")  # fallback
+            # Fallback a modelo pre-entrenado
+            fallback_model = f"{selected_model_type}_model.keras"
+            fallback_path = os.path.join(dataset_models_dir, fallback_model)
+            if os.path.exists(fallback_path):
+                model_path = fallback_path
+                st.warning(f"No se encontró modelo {selected_model_type} entrenado. Usando modelo pre-entrenado.")
+            else:
+                st.error(f"No se encontró modelo {selected_model_type} para {dataset_name}.")
     else:
-        model_path = os.path.join("models", dataset_name.lower(), "advanced_model.keras")  # fallback
+        st.error(f"Directorio de modelos para {dataset_name} no encontrado.")
 
     if os.path.exists(model_path):
         cnn = load_model(model_path)
