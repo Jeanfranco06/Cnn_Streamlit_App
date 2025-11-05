@@ -934,31 +934,28 @@ with tab2:
 
 # Footer
 st.markdown("---")
-st.markdown("### 📚 Referencias y Recursos")
+st.markdown("### 📚 Tecnologías Utilizadas")
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
     st.markdown("""
     **Datasets:**
-    - CIFAR-10 Dataset
-    - MNIST Dataset
-    - Alex Krizhevsky et al.
+    - CIFAR-10
+    - MNIST
     """)
 
 with col2:
     st.markdown("""
     **Framework:**
     - TensorFlow/Keras
-    - Documentación oficial
     """)
 
 with col3:
     st.markdown("""
     **Interfaz:**
     - Streamlit
-    - Aplicación web interactiva
     """)
 
 st.markdown("---")
-st.markdown("**© 2025 - Grupo 9 - Algoritmos de Machine Learning**")
+st.markdown("**© 2025 - Aplicación de Demostración CNN**")
