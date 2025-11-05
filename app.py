@@ -97,19 +97,33 @@ def load_mnist_data():
 def load_model(model_path):
     """Carga un modelo entrenado"""
     try:
-        if os.path.exists(model_path):
-            # Determinar el tipo de modelo basado en el nombre del archivo
-            if 'mnist' in model_path.lower():
-                cnn = MNISTCNN()
-            else:
-                cnn = CIFAR10CNN()
-            cnn.load_model(model_path)
-            return cnn
-        else:
+        if not os.path.exists(model_path):
             st.error(f"Modelo no encontrado en: {model_path}")
             return None
+
+        # Determinar el tipo de modelo basado en el nombre del archivo
+        if 'mnist' in model_path.lower():
+            cnn = MNISTCNN()
+        else:
+            cnn = CIFAR10CNN()
+
+        # Intentar cargar el modelo
+        cnn.load_model(model_path)
+
+        # Verificar que el modelo se cargó correctamente
+        if cnn.model is None:
+            st.error(f"Error: El modelo se cargó pero es None")
+            return None
+
+        # Verificar que el modelo tenga la estructura correcta
+        if not hasattr(cnn.model, 'predict'):
+            st.error(f"Error: El modelo cargado no tiene método predict")
+            return None
+
+        return cnn
+
     except Exception as e:
-        st.error(f"Error al cargar el modelo: {e}")
+        st.error(f"Error al cargar el modelo desde {model_path}: {str(e)}")
         return None
 
 # Función para mostrar sección de dataset
@@ -590,151 +604,150 @@ def show_predictions_section(data_loader, data, dataset_name, input_shape):
         key=f"predict_model_type_{dataset_name.lower()}"
     )
 
-    # Buscar el modelo correspondiente
-    # Mapear nombres de dataset a nombres de directorio
-    dataset_dir_map = {
-        "CIFAR-10": "cifar10",
-        "MNIST": "mnist"
-    }
-    dataset_dir_name = dataset_dir_map.get(dataset_name, dataset_name.lower().replace("-", ""))
-    dataset_models_dir = os.path.join("models", dataset_dir_name)
-    model_path = None
+    st.markdown("### 📸 Cargar Imagen para Predicción")
 
-    if os.path.exists(dataset_models_dir):
-        # Buscar modelo entrenado del tipo seleccionado
-        trained_model = f"{selected_model_type}_trained.keras"
-        trained_path = os.path.join(dataset_models_dir, trained_model)
+    col1, col2 = st.columns([1, 2])
 
-        if os.path.exists(trained_path):
-            model_path = trained_path
-        else:
-            # Fallback a modelo pre-entrenado
-            fallback_model = f"{selected_model_type}_model.keras"
-            fallback_path = os.path.join(dataset_models_dir, fallback_model)
-            if os.path.exists(fallback_path):
-                model_path = fallback_path
-            else:
-                # Si no existe modelo residual, usar advanced como fallback
-                if selected_model_type == "residual":
-                    advanced_fallback = "advanced_model.keras"
-                    advanced_path = os.path.join(dataset_models_dir, advanced_fallback)
-                    if os.path.exists(advanced_path):
-                        model_path = advanced_path
-                        st.warning(f"No se encontró modelo residual entrenado. Usando modelo avanzado como alternativa.")
-                    else:
-                        st.error(f"No se encontraron modelos para {dataset_name}.")
-                else:
-                    st.error(f"No se encontró modelo {selected_model_type} para {dataset_name}.")
-    else:
-        st.error(f"Directorio de modelos para {dataset_name} no encontrado.")
+    with col1:
+        # Opciones de entrada
+        input_method = st.radio(
+            "Método de entrada:",
+            ["Imagen del dataset", "Subir imagen"],
+            key=f"input_method_{dataset_name.lower()}"
+        )
 
-    if model_path is not None and os.path.exists(model_path):
-        cnn = load_model(model_path)
+        if input_method == "Imagen del dataset":
+            # Seleccionar imagen aleatoria del test set
+            if st.button(f"🎲 Seleccionar Imagen Aleatoria - {dataset_name}",
+                       key=f"random_button_{dataset_name.lower()}"):
+                st.session_state[f'selected_image_idx_{dataset_name.lower()}'] = np.random.randint(len(data['X_test']))
+                st.rerun()
 
-        if cnn is not None:
-            st.markdown("### 📸 Cargar Imagen para Predicción")
+            # Slider para seleccionar imagen específica
+            image_idx = st.slider(
+                f"Seleccionar imagen del test set - {dataset_name}:",
+                0, len(data['X_test'])-1,
+                st.session_state.get(f'selected_image_idx_{dataset_name.lower()}', 0),
+                key=f"slider_{dataset_name.lower()}"
+            )
 
-            col1, col2 = st.columns([1, 2])
+            selected_image = data['X_test'][image_idx]
+            true_label = data['class_names'][data['y_test'][image_idx]]
 
-            with col1:
-                # Opciones de entrada
-                input_method = st.radio(
-                    "Método de entrada:",
-                    ["Imagen del dataset", "Subir imagen"],
-                    key=f"input_method_{dataset_name.lower()}"
+        else:  # Subir imagen
+            if dataset_name == "CIFAR-10":
+                uploaded_file = st.file_uploader(
+                    "Sube una imagen (32x32, formato RGB)",
+                    type=['png', 'jpg', 'jpeg'],
+                    key=f"uploader_{dataset_name.lower()}"
+                )
+            else:  # MNIST
+                uploaded_file = st.file_uploader(
+                    "Sube una imagen de dígito (28x28, escala de grises)",
+                    type=['png', 'jpg', 'jpeg'],
+                    key=f"uploader_{dataset_name.lower()}"
                 )
 
-                if input_method == "Imagen del dataset":
-                    # Seleccionar imagen aleatoria del test set
-                    if st.button(f"🎲 Seleccionar Imagen Aleatoria - {dataset_name}",
-                               key=f"random_button_{dataset_name.lower()}"):
-                        st.session_state[f'selected_image_idx_{dataset_name.lower()}'] = np.random.randint(len(data['X_test']))
-                        st.rerun()
+            if uploaded_file is not None:
+                # Procesar imagen subida
+                image = Image.open(uploaded_file)
 
-                    # Slider para seleccionar imagen específica
-                    image_idx = st.slider(
-                        f"Seleccionar imagen del test set - {dataset_name}:",
-                        0, len(data['X_test'])-1,
-                        st.session_state.get(f'selected_image_idx_{dataset_name.lower()}', 0),
-                        key=f"slider_{dataset_name.lower()}"
-                    )
+                if dataset_name == "CIFAR-10":
+                    image = image.resize((32, 32))
+                    image_array = np.array(image) / 255.0
 
-                    selected_image = data['X_test'][image_idx]
-                    true_label = data['class_names'][data['y_test'][image_idx]]
+                    # Asegurar que tenga 3 canales
+                    if len(image_array.shape) == 2:
+                        image_array = np.stack([image_array] * 3, axis=-1)
+                    elif image_array.shape[-1] == 4:
+                        image_array = image_array[:, :, :3]
+                else:  # MNIST
+                    # Mejor preprocesamiento para MNIST
+                    image = image.resize((28, 28)).convert('L')
 
-                else:  # Subir imagen
-                    if dataset_name == "CIFAR-10":
-                        uploaded_file = st.file_uploader(
-                            "Sube una imagen (32x32, formato RGB)",
-                            type=['png', 'jpg', 'jpeg'],
-                            key=f"uploader_{dataset_name.lower()}"
-                        )
-                    else:  # MNIST
-                        uploaded_file = st.file_uploader(
-                            "Sube una imagen de dígito (28x28, escala de grises)",
-                            type=['png', 'jpg', 'jpeg'],
-                            key=f"uploader_{dataset_name.lower()}"
-                        )
+                    # Convertir a array y normalizar
+                    image_array = np.array(image, dtype=np.float32) / 255.0
 
-                    if uploaded_file is not None:
-                        # Procesar imagen subida
-                        image = Image.open(uploaded_file)
+                    # Invertir colores si es necesario (fondo blanco -> fondo negro)
+                    if image_array.mean() > 0.5:  # Si la imagen es mayormente clara
+                        image_array = 1.0 - image_array
 
-                        if dataset_name == "CIFAR-10":
-                            image = image.resize((32, 32))
-                            image_array = np.array(image) / 255.0
+                    # Asegurar que tenga la forma correcta (28, 28, 1)
+                    if image_array.ndim == 2:
+                        image_array = np.expand_dims(image_array, axis=-1)
 
-                            # Asegurar que tenga 3 canales
-                            if len(image_array.shape) == 2:
-                                image_array = np.stack([image_array] * 3, axis=-1)
-                            elif image_array.shape[-1] == 4:
-                                image_array = image_array[:, :, :3]
-                        else:  # MNIST
-                            # Mejor preprocesamiento para MNIST
-                            image = image.resize((28, 28)).convert('L')
-
-                            # Convertir a array y normalizar
-                            image_array = np.array(image, dtype=np.float32) / 255.0
-
-                            # Invertir colores si es necesario (fondo blanco -> fondo negro)
-                            if image_array.mean() > 0.5:  # Si la imagen es mayormente clara
-                                image_array = 1.0 - image_array
-
-                            # Asegurar que tenga la forma correcta (28, 28, 1)
-                            if image_array.ndim == 2:
-                                image_array = np.expand_dims(image_array, axis=-1)
-
-                            # Verificar dimensiones
-                            if image_array.shape != (28, 28, 1):
-                                st.error(f"Error: La imagen procesada tiene forma {image_array.shape}, se esperaba (28, 28, 1)")
-                                selected_image = None
-                                true_label = None
-                            else:
-                                selected_image = image_array
-                                true_label = "Desconocido (imagen subida)"
-                    else:
+                    # Verificar dimensiones
+                    if image_array.shape != (28, 28, 1):
+                        st.error(f"Error: La imagen procesada tiene forma {image_array.shape}, se esperaba (28, 28, 1)")
                         selected_image = None
                         true_label = None
-
-            with col2:
-                if selected_image is not None:
-                    # Mostrar imagen
-                    fig, ax = plt.subplots(figsize=(6, 6))
-                    if dataset_name == "MNIST":
-                        ax.imshow(selected_image.squeeze(), cmap='gray')
                     else:
-                        ax.imshow(selected_image)
-                    ax.set_title(f"Imagen Seleccionada\nEtiqueta real: {true_label}",
-                               fontsize=14, fontweight='bold')
-                    ax.axis('off')
-                    st.pyplot(fig)
+                        selected_image = image_array
+                        true_label = "Desconocido (imagen subida)"
+            else:
+                selected_image = None
+                true_label = None
 
-                    # Botón para predecir
-                    if st.button(f"🔮 Realizar Predicción - {dataset_name}", type="primary",
-                               key=f"predict_button_{dataset_name.lower()}"):
-                        try:
-                            with st.spinner("Analizando imagen..."):
-                                # Preprocesar imagen
+    with col2:
+        if selected_image is not None:
+            # Mostrar imagen
+            fig, ax = plt.subplots(figsize=(6, 6))
+            if dataset_name == "MNIST":
+                ax.imshow(selected_image.squeeze(), cmap='gray')
+            else:
+                ax.imshow(selected_image)
+            ax.set_title(f"Imagen Seleccionada\nEtiqueta real: {true_label}",
+                       fontsize=14, fontweight='bold')
+            ax.axis('off')
+            st.pyplot(fig)
+
+            # Botón para predecir
+            if st.button(f"🔮 Realizar Predicción - {dataset_name}", type="primary",
+                       key=f"predict_button_{dataset_name.lower()}"):
+                try:
+                    with st.spinner("Cargando modelo..."):
+                        # Buscar el modelo correspondiente solo cuando se hace clic
+                        dataset_dir_map = {
+                            "CIFAR-10": "cifar10",
+                            "MNIST": "mnist"
+                        }
+                        dataset_dir_name = dataset_dir_map.get(dataset_name, dataset_name.lower().replace("-", ""))
+                        dataset_models_dir = os.path.join("models", dataset_dir_name)
+                        model_path = None
+
+                        if os.path.exists(dataset_models_dir):
+                            # Buscar modelo entrenado del tipo seleccionado
+                            trained_model = f"{selected_model_type}_trained.keras"
+                            trained_path = os.path.join(dataset_models_dir, trained_model)
+
+                            if os.path.exists(trained_path):
+                                model_path = trained_path
+                            else:
+                                # Fallback a modelo pre-entrenado
+                                fallback_model = f"{selected_model_type}_model.keras"
+                                fallback_path = os.path.join(dataset_models_dir, fallback_model)
+                                if os.path.exists(fallback_path):
+                                    model_path = fallback_path
+                                else:
+                                    # Si no existe modelo residual, usar advanced como fallback
+                                    if selected_model_type == "residual":
+                                        advanced_fallback = "advanced_model.keras"
+                                        advanced_path = os.path.join(dataset_models_dir, advanced_fallback)
+                                        if os.path.exists(advanced_path):
+                                            model_path = advanced_path
+                                            st.warning(f"No se encontró modelo residual entrenado. Usando modelo avanzado como alternativa.")
+                                        else:
+                                            st.error(f"No se encontraron modelos para {dataset_name}.")
+                                    else:
+                                        st.error(f"No se encontró modelo {selected_model_type} para {dataset_name}.")
+                        else:
+                            st.error(f"Directorio de modelos para {dataset_name} no encontrado.")
+
+                        if model_path is not None and os.path.exists(model_path):
+                            cnn = load_model(model_path)
+
+                            if cnn is not None:
+                                # Realizar predicción
                                 input_image = np.expand_dims(selected_image, axis=0)
 
                                 # Verificar que la imagen tenga la forma correcta
@@ -808,18 +821,17 @@ def show_predictions_section(data_loader, data, dataset_name, input_shape):
                                         st.success(f"✅ ¡Predicción correcta! El modelo acertó.")
                                     else:
                                         st.error(f"❌ Predicción incorrecta. El modelo predijo '{pred_class}' pero la etiqueta real es '{true_label}'.")
+                            else:
+                                st.error("No se pudo cargar el modelo.")
+                        else:
+                            st.warning(f"No se encontró un modelo entrenado para {dataset_name}. Entrena un modelo primero.")
 
-                        except Exception as e:
-                            st.error(f"Error inesperado durante la predicción: {str(e)}")
-                            st.error("Por favor, intenta con otra imagen o verifica que el modelo esté cargado correctamente.")
-
-                else:
-                    st.info("Selecciona o sube una imagen para realizar una predicción.")
+                except Exception as e:
+                    st.error(f"Error inesperado durante la predicción: {str(e)}")
+                    st.error("Por favor, intenta con otra imagen o verifica que el modelo esté cargado correctamente.")
 
         else:
-            st.error("No se pudo cargar el modelo.")
-    else:
-        st.warning(f"No se encontró un modelo entrenado para {dataset_name}. Entrena un modelo primero.")
+            st.info("Selecciona o sube una imagen para realizar una predicción.")
 
 # Contenido de la pestaña CIFAR-10
 with tab1:
