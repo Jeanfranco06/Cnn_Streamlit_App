@@ -1,6 +1,6 @@
 """
 Aplicación Streamlit para demostración de modelos CNN
-CIFAR-10 y MNIST - Grupo 9
+CIFAR-10 y MNIST
 """
 
 import streamlit as st
@@ -36,7 +36,6 @@ sns.set_palette("husl")
 
 # Título principal
 st.title("🧠 Clasificación de Imágenes con Redes Neuronales Convolucionales")
-st.markdown("**Grupo 9 - Algoritmos de Machine Learning**")
 st.markdown("---")
 
 # Sidebar con información del proyecto
@@ -874,8 +873,8 @@ def show_tab_content(dataset_name, cnn_class, input_shape):
 
     # Botón para cargar datos
     if not st.session_state[data_key]:
-        col1, col2, col3 = st.columns([2, 1, 2])
-        with col2:
+        col1, col2 = st.columns([1, 3])
+        with col1:
             if st.button(f"📥 Cargar Datos {dataset_name}", type="primary", key=f"load_{dataset_name.lower()}_btn"):
                 with st.spinner(f"Cargando datos de {dataset_name}..."):
                     try:
