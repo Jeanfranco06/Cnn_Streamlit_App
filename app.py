@@ -245,10 +245,16 @@ def show_dataset_section(data_loader, data, dataset_name):
                 if dataset_name == "MNIST":
                     # Para MNIST, remover dimensión de canal y usar colormap gray
                     image = image.squeeze()
+                    # Convertir float16 a float32 si es necesario para procesamiento
+                    if image.dtype == 'float16':
+                        image = image.astype('float32')
                     img_array = (image * 255).astype(np.uint8)
                     pil_image = Image.fromarray(img_array, mode='L')
                 else:
                     # Para CIFAR-10
+                    # Convertir float16 a float32 si es necesario para procesamiento
+                    if image.dtype == 'float16':
+                        image = image.astype('float32')
                     img_array = (image * 255).astype(np.uint8)
                     pil_image = Image.fromarray(img_array)
 
@@ -803,10 +809,16 @@ def show_predictions_section(data_loader, data, dataset_name, input_shape):
         if selected_image is not None:
             # Mostrar imagen
             fig, ax = plt.subplots(figsize=(6, 6))
+
+            # Convertir imagen a formato compatible con matplotlib
+            display_image = selected_image.copy()
+            if display_image.dtype == 'float16':
+                display_image = display_image.astype('float32')
+
             if dataset_name == "MNIST":
-                ax.imshow(selected_image.squeeze(), cmap='gray')
+                ax.imshow(display_image.squeeze(), cmap='gray')
             else:
-                ax.imshow(selected_image)
+                ax.imshow(display_image)
             ax.set_title(f"Imagen Seleccionada\nEtiqueta real: {true_label}",
                        fontsize=14, fontweight='bold')
             ax.axis('off')
