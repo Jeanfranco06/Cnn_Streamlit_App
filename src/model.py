@@ -264,7 +264,8 @@ class CIFAR10CNN:
               X_val: np.ndarray, y_val: np.ndarray,
               epochs: int = 50, batch_size: int = 64,
               data_augmentation: bool = True,
-              save_path: Optional[str] = None) -> Dict[str, Any]:
+              save_path: Optional[str] = None,
+              callbacks: Optional[list] = None) -> Dict[str, Any]:
         """
         Entrena el modelo
 
@@ -284,7 +285,9 @@ class CIFAR10CNN:
         if self.model is None:
             raise ValueError("Debe construir el modelo primero usando build_model()")
 
-        callbacks = self.get_callbacks()
+        # Usar callbacks proporcionados o los predeterminados
+        if callbacks is None:
+            callbacks = self.get_callbacks()
 
         if data_augmentation:
             from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -707,7 +710,8 @@ class MNISTCNN:
               X_val: np.ndarray, y_val: np.ndarray,
               epochs: int = 20, batch_size: int = 128,
               data_augmentation: bool = True,
-              save_path: Optional[str] = None) -> Dict[str, Any]:
+              save_path: Optional[str] = None,
+              callbacks: Optional[list] = None) -> Dict[str, Any]:
         """
         Entrena el modelo
 
@@ -727,7 +731,9 @@ class MNISTCNN:
         if self.model is None:
             raise ValueError("Debe construir el modelo primero usando build_model()")
 
-        callbacks = self.get_callbacks()
+        # Usar callbacks proporcionados o los predeterminados
+        if callbacks is None:
+            callbacks = self.get_callbacks()
 
         if data_augmentation:
             from tensorflow.keras.preprocessing.image import ImageDataGenerator

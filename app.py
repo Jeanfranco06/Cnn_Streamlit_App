@@ -578,9 +578,12 @@ def show_training_section(cnn_class, data_loader, data, dataset_name, input_shap
                     # Entrenar con progreso detallado
                     detail_text.text("Iniciando entrenamiento con data augmentation...")
 
-                    # Crear un callback personalizado para progreso detallado
-                    class TrainingProgressCallback:
+                    # Crear callback personalizado para progreso detallado
+                    from tensorflow.keras.callbacks import Callback
+
+                    class TrainingProgressCallback(Callback):
                         def __init__(self, progress_bar, status_text, detail_text, epoch_progress, total_epochs):
+                            super().__init__()
                             self.progress_bar = progress_bar
                             self.status_text = status_text
                             self.detail_text = detail_text
@@ -606,10 +609,12 @@ def show_training_section(cnn_class, data_loader, data, dataset_name, input_shap
                                 self.detail_text.text(".3f")
                                 self.layer_info.text(f"✓ Capas convolucionales procesadas | ✓ Backpropagation completado | ✓ Pesos actualizados")
 
-                    # Crear callback
+                    # Obtener callbacks existentes y agregar el nuestro
+                    existing_callbacks = cnn.get_callbacks()
                     progress_callback = TrainingProgressCallback(
                         progress_bar, status_text, detail_text, epoch_progress, epochs
                     )
+                    all_callbacks = existing_callbacks + [progress_callback]
 
                     # Entrenar modelo
                     history = cnn.train(
@@ -621,7 +626,7 @@ def show_training_section(cnn_class, data_loader, data, dataset_name, input_shap
                         batch_size=batch_size,
                         data_augmentation=True,
                         save_path=save_path,
-                        progress_callback=progress_callback
+                        callbacks=all_callbacks
                     )
 
                     # Fase 5: Finalización
