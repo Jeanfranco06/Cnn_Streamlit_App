@@ -802,21 +802,29 @@ def show_predictions_section(data_loader, data, dataset_name, input_shape):
                                 with col2:
                                     st.markdown("### 📊 Probabilidades")
 
-                                    # Gráfico de barras
-                                    fig, ax = plt.subplots(figsize=(8, 6))
-                                    bars = ax.barh(range(len(top_3_classes)), top_3_probs,
-                                                 color=['gold', 'silver', '#CD7F32'])
-                                    ax.set_yticks(range(len(top_3_classes)))
-                                    ax.set_yticklabels(top_3_classes)
-                                    ax.set_xlabel('Probabilidad')
-                                    ax.set_title('Top 3 Predicciones')
+                                    try:
+                                        # Gráfico de barras
+                                        fig, ax = plt.subplots(figsize=(8, 6))
+                                        bars = ax.barh(range(len(top_3_classes)), top_3_probs,
+                                                     color=['gold', 'silver', '#CD7F32'])
+                                        ax.set_yticks(range(len(top_3_classes)))
+                                        ax.set_yticklabels(top_3_classes)
+                                        ax.set_xlabel('Probabilidad')
+                                        ax.set_title('Top 3 Predicciones')
 
-                                    # Agregar valores en las barras
-                                    for bar, prob in zip(bars, top_3_probs):
-                                        ax.text(bar.get_width() + 0.01, bar.get_y() + bar.get_height()/2,
-                                               f'{prob:.3f}', va='center', fontsize=10)
+                                        # Agregar valores en las barras
+                                        for bar, prob in zip(bars, top_3_probs):
+                                            ax.text(bar.get_width() + 0.01, bar.get_y() + bar.get_height()/2,
+                                                   f'{prob:.3f}', va='center', fontsize=10)
 
-                                    st.pyplot(fig)
+                                        st.pyplot(fig)
+                                    except Exception as plot_error:
+                                        st.error(f"Error al generar el gráfico: {str(plot_error)}")
+                                        # Mostrar resultados en texto como fallback
+                                        st.markdown("**Resultados en texto:**")
+                                        for i, (class_name, prob) in enumerate(zip(top_3_classes, top_3_probs)):
+                                            medal = "🥇" if i == 0 else "🥈" if i == 1 else "🥉"
+                                            st.write(f"{medal} {class_name}: {prob:.4f}")
 
                                 # Comparación con etiqueta real (si aplica)
                                 if input_method == "Imagen del dataset":
