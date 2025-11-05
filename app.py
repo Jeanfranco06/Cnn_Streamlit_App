@@ -732,62 +732,86 @@ def show_predictions_section(data_loader, data, dataset_name, input_shape):
                     # Botón para predecir
                     if st.button(f"🔮 Realizar Predicción - {dataset_name}", type="primary",
                                key=f"predict_button_{dataset_name.lower()}"):
-                        with st.spinner("Analizando imagen..."):
-                            # Preprocesar imagen
-                            input_image = np.expand_dims(selected_image, axis=0)
+                        try:
+                            with st.spinner("Analizando imagen..."):
+                                # Preprocesar imagen
+                                input_image = np.expand_dims(selected_image, axis=0)
 
-                            # Realizar predicción
-                            predictions = cnn.model.predict(input_image, verbose=0)[0]
+                                # Verificar que la imagen tenga la forma correcta
+                                expected_shape = (1,) + input_shape
+                                if input_image.shape != expected_shape:
+                                    st.error(f"Error: La imagen procesada tiene forma {input_image.shape}, se esperaba {expected_shape}")
+                                    st.stop()
 
-                            # Obtener top 3 predicciones
-                            top_3_indices = np.argsort(predictions)[-3:][::-1]
-                            top_3_probs = predictions[top_3_indices]
-                            top_3_classes = [data['class_names'][i] for i in top_3_indices]
+                                # Realizar predicción con manejo de errores
+                                try:
+                                    predictions = cnn.model.predict(input_image, verbose=0)[0]
+                                except Exception as pred_error:
+                                    st.error(f"Error durante la predicción: {str(pred_error)}")
+                                    st.stop()
 
-                            # Mostrar resultados
-                            st.success("¡Predicción completada!")
+                                # Verificar que las predicciones sean válidas
+                                if not isinstance(predictions, np.ndarray) or len(predictions) == 0:
+                                    st.error("Error: Las predicciones no son válidas")
+                                    st.stop()
 
-                            col1, col2 = st.columns(2)
+                                # Obtener top 3 predicciones
+                                try:
+                                    top_3_indices = np.argsort(predictions)[-3:][::-1]
+                                    top_3_probs = predictions[top_3_indices]
+                                    top_3_classes = [data['class_names'][i] for i in top_3_indices]
+                                except Exception as sort_error:
+                                    st.error(f"Error procesando predicciones: {str(sort_error)}")
+                                    st.stop()
 
-                            with col1:
-                                st.markdown("### 🏆 Top 3 Predicciones")
+                                # Mostrar resultados
+                                st.success("¡Predicción completada!")
 
-                                for i, (class_name, prob) in enumerate(zip(top_3_classes, top_3_probs)):
-                                    if i == 0:
-                                        st.metric(f"🥇 {class_name}", f"{prob:.4f}")
-                                    elif i == 1:
-                                        st.metric(f"🥈 {class_name}", f"{prob:.4f}")
+                                col1, col2 = st.columns(2)
+
+                                with col1:
+                                    st.markdown("### 🏆 Top 3 Predicciones")
+
+                                    for i, (class_name, prob) in enumerate(zip(top_3_classes, top_3_probs)):
+                                        if i == 0:
+                                            st.metric(f"🥇 {class_name}", f"{prob:.4f}")
+                                        elif i == 1:
+                                            st.metric(f"🥈 {class_name}", f"{prob:.4f}")
+                                        else:
+                                            st.metric(f"🥉 {class_name}", f"{prob:.4f}")
+
+                                with col2:
+                                    st.markdown("### 📊 Probabilidades")
+
+                                    # Gráfico de barras
+                                    fig, ax = plt.subplots(figsize=(8, 6))
+                                    bars = ax.barh(range(len(top_3_classes)), top_3_probs,
+                                                 color=['gold', 'silver', '#CD7F32'])
+                                    ax.set_yticks(range(len(top_3_classes)))
+                                    ax.set_yticklabels(top_3_classes)
+                                    ax.set_xlabel('Probabilidad')
+                                    ax.set_title('Top 3 Predicciones')
+
+                                    # Agregar valores en las barras
+                                    for bar, prob in zip(bars, top_3_probs):
+                                        ax.text(bar.get_width() + 0.01, bar.get_y() + bar.get_height()/2,
+                                               f'{prob:.3f}', va='center', fontsize=10)
+
+                                    st.pyplot(fig)
+
+                                # Comparación con etiqueta real (si aplica)
+                                if input_method == "Imagen del dataset":
+                                    pred_class = top_3_classes[0]
+                                    is_correct = pred_class == true_label
+
+                                    if is_correct:
+                                        st.success(f"✅ ¡Predicción correcta! El modelo acertó.")
                                     else:
-                                        st.metric(f"🥉 {class_name}", f"{prob:.4f}")
+                                        st.error(f"❌ Predicción incorrecta. El modelo predijo '{pred_class}' pero la etiqueta real es '{true_label}'.")
 
-                            with col2:
-                                st.markdown("### 📊 Probabilidades")
-
-                                # Gráfico de barras
-                                fig, ax = plt.subplots(figsize=(8, 6))
-                                bars = ax.barh(range(len(top_3_classes)), top_3_probs,
-                                             color=['gold', 'silver', '#CD7F32'])
-                                ax.set_yticks(range(len(top_3_classes)))
-                                ax.set_yticklabels(top_3_classes)
-                                ax.set_xlabel('Probabilidad')
-                                ax.set_title('Top 3 Predicciones')
-
-                                # Agregar valores en las barras
-                                for bar, prob in zip(bars, top_3_probs):
-                                    ax.text(bar.get_width() + 0.01, bar.get_y() + bar.get_height()/2,
-                                           f'{prob:.3f}', va='center', fontsize=10)
-
-                                st.pyplot(fig)
-
-                            # Comparación con etiqueta real (si aplica)
-                            if input_method == "Imagen del dataset":
-                                pred_class = top_3_classes[0]
-                                is_correct = pred_class == true_label
-
-                                if is_correct:
-                                    st.success(f"✅ ¡Predicción correcta! El modelo acertó.")
-                                else:
-                                    st.error(f"❌ Predicción incorrecta. El modelo predijo '{pred_class}' pero la etiqueta real es '{true_label}'.")
+                        except Exception as e:
+                            st.error(f"Error inesperado durante la predicción: {str(e)}")
+                            st.error("Por favor, intenta con otra imagen o verifica que el modelo esté cargado correctamente.")
 
                 else:
                     st.info("Selecciona o sube una imagen para realizar una predicción.")
