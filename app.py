@@ -874,7 +874,7 @@ def show_tab_content(dataset_name, cnn_class, input_shape):
 
     # Botón para cargar datos
     if not st.session_state[data_key]:
-        col1, col2, col3 = st.columns([1, 2, 1])
+        col1, col2, col3 = st.columns([2, 1, 2])
         with col2:
             if st.button(f"📥 Cargar Datos {dataset_name}", type="primary", key=f"load_{dataset_name.lower()}_btn"):
                 with st.spinner(f"Cargando datos de {dataset_name}..."):
