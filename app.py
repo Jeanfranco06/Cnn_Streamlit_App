@@ -111,10 +111,11 @@ def load_cifar10_data():
             'class_names': full_data['class_names']
         }
 
-        # Convertir a tipos más eficientes
+        # Convertir a tipos más eficientes para memoria, pero mantener compatibilidad con matplotlib
         for key in ['X_train', 'X_val', 'X_test']:
             if key in reduced_data:
-                reduced_data[key] = reduced_data[key].astype('float16')
+                # Usar float32 en lugar de float16 para compatibilidad con matplotlib
+                reduced_data[key] = reduced_data[key].astype('float32')
 
         # Liberar memoria
         del full_data
