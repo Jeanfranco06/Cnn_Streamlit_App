@@ -13,6 +13,7 @@ import os
 import sys
 from datetime import datetime
 import pandas as pd
+import time
 
 # Agregar el directorio src al path
 sys.path.append('src')
@@ -24,7 +25,7 @@ from src.utils import ExperimentTracker, ModelInspector, DataVisualizer
 
 # Configurar página
 st.set_page_config(
-    page_title="CNN Demos - Grupo 9",
+    page_title="CNN Demos",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -446,102 +447,240 @@ def show_training_section(cnn_class, data_loader, data, dataset_name, input_shap
         if training_key in st.session_state and st.session_state[training_key]:
             st.markdown("### 📈 Progreso del Entrenamiento")
 
-            # Placeholder para progreso
-            progress_bar = st.progress(0)
-            status_text = st.empty()
+            # Contenedor para progreso detallado
+            progress_container = st.container()
+            with progress_container:
+                # Barra de progreso principal
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                detail_text = st.empty()
+                epoch_progress = st.empty()
+                layer_info = st.empty()
 
-            try:
-                status_text.text("Cargando datos...")
-                progress_bar.progress(10)
+                try:
+                    # Fase 1: Preparación de datos
+                    status_text.markdown("**🔄 Fase 1/5: Preparación de Datos**")
+                    detail_text.text("Verificando y preprocesando datos de entrenamiento...")
+                    progress_bar.progress(5)
 
-                status_text.text("Construyendo modelo...")
-                # Configurar modelo
-                model_type = st.session_state[f'training_model_type_{dataset_name.lower()}']
+                    # Fase 2: Construcción del modelo
+                    status_text.markdown("**🏗️ Fase 2/5: Construcción del Modelo**")
+                    model_type = st.session_state[f'training_model_type_{dataset_name.lower()}']
 
-                if dataset_name == "CIFAR-10":
-                    cnn = CIFAR10CNN(input_shape=input_shape)
+                    # Mostrar arquitectura del modelo que se va a construir
                     if model_type == "basic":
-                        model_config = {'filters': [32, 64, 128], 'dropout_rate': 0.5, 'learning_rate': 1e-4}
+                        if dataset_name == "CIFAR-10":
+                            layer_info.markdown("""
+                            **Construyendo Modelo Básico CIFAR-10:**
+                            - Capa Conv2D (32 filtros, 3x3) + ReLU + MaxPooling
+                            - Capa Conv2D (64 filtros, 3x3) + ReLU + MaxPooling
+                            - Capa Conv2D (128 filtros, 3x3) + ReLU + MaxPooling
+                            - Flatten + Dense(512) + Dropout(50%) + Dense(10)
+                            """)
+                        else:
+                            layer_info.markdown("""
+                            **Construyendo Modelo Básico MNIST:**
+                            - Capa Conv2D (32 filtros, 3x3) + ReLU + MaxPooling
+                            - Capa Conv2D (64 filtros, 3x3) + ReLU + MaxPooling
+                            - Flatten + Dense(128) + Dropout(25%) + Dense(10)
+                            """)
                     elif model_type == "advanced":
-                        model_config = {'filters': [64, 128, 256, 512], 'dropout_rate': 0.3, 'learning_rate': 1e-4}
+                        if dataset_name == "CIFAR-10":
+                            layer_info.markdown("""
+                            **Construyendo Modelo Avanzado CIFAR-10:**
+                            - Capa Conv2D (64 filtros) + BatchNorm + ReLU + MaxPooling
+                            - Capa Conv2D (128 filtros) + BatchNorm + ReLU + MaxPooling
+                            - Capa Conv2D (256 filtros) + BatchNorm + ReLU + MaxPooling
+                            - Capa Conv2D (512 filtros) + BatchNorm + ReLU + MaxPooling
+                            - GlobalAveragePooling + Dense(10)
+                            """)
+                        else:
+                            layer_info.markdown("""
+                            **Construyendo Modelo Avanzado MNIST:**
+                            - Capa Conv2D (32 filtros) + BatchNorm + ReLU + MaxPooling
+                            - Capa Conv2D (64 filtros) + BatchNorm + ReLU + MaxPooling
+                            - Capa Conv2D (128 filtros) + BatchNorm + ReLU + MaxPooling
+                            - GlobalAveragePooling + Dense(10)
+                            """)
                     else:  # residual
-                        model_config = {'num_blocks': 3, 'filters': 64, 'learning_rate': 1e-4}
-                else:  # MNIST
-                    cnn = MNISTCNN(input_shape=input_shape)
-                    if model_type == "basic":
-                        model_config = {'filters': [32, 64], 'dropout_rate': 0.25, 'learning_rate': 1e-4}
-                    elif model_type == "advanced":
-                        model_config = {'filters': [32, 64, 128], 'dropout_rate': 0.3, 'learning_rate': 1e-4}
-                    else:  # residual
-                        model_config = {'num_blocks': 2, 'filters': 32, 'learning_rate': 1e-4}
+                        if dataset_name == "CIFAR-10":
+                            layer_info.markdown("""
+                            **Construyendo Modelo Residual CIFAR-10:**
+                            - Bloque Residual 1: Conv2D + BatchNorm + ReLU + Conv2D + Skip Connection
+                            - Bloque Residual 2: Conv2D + BatchNorm + ReLU + Conv2D + Skip Connection
+                            - Bloque Residual 3: Conv2D + BatchNorm + ReLU + Conv2D + Skip Connection
+                            - GlobalAveragePooling + Dense(10)
+                            """)
+                        else:
+                            layer_info.markdown("""
+                            **Construyendo Modelo Residual MNIST:**
+                            - Bloque Residual 1: Conv2D + BatchNorm + ReLU + Conv2D + Skip Connection
+                            - Bloque Residual 2: Conv2D + BatchNorm + ReLU + Conv2D + Skip Connection
+                            - GlobalAveragePooling + Dense(10)
+                            """)
 
-                model = cnn.build_model(model_type, **model_config)
-                progress_bar.progress(30)
+                    detail_text.text("Configurando capas convolucionales y conexiones...")
+                    progress_bar.progress(15)
 
-                status_text.text("Iniciando entrenamiento...")
-                # Entrenar modelo
-                # Mapear nombres de dataset a nombres de directorio
-                dataset_dir_map = {
-                    "CIFAR-10": "cifar10",
-                    "MNIST": "mnist"
-                }
-                dataset_dir_name = dataset_dir_map.get(dataset_name, dataset_name.lower().replace("-", ""))
-                save_path = os.path.join("models", dataset_dir_name, f"{model_type}_trained.keras")
+                    # Configurar y construir modelo
+                    if dataset_name == "CIFAR-10":
+                        cnn = CIFAR10CNN(input_shape=input_shape)
+                        if model_type == "basic":
+                            model_config = {'filters': [32, 64, 128], 'dropout_rate': 0.5, 'learning_rate': 1e-4}
+                        elif model_type == "advanced":
+                            model_config = {'filters': [64, 128, 256, 512], 'dropout_rate': 0.3, 'learning_rate': 1e-4}
+                        else:  # residual
+                            model_config = {'num_blocks': 3, 'filters': 64, 'learning_rate': 1e-4}
+                    else:  # MNIST
+                        cnn = MNISTCNN(input_shape=input_shape)
+                        if model_type == "basic":
+                            model_config = {'filters': [32, 64], 'dropout_rate': 0.25, 'learning_rate': 1e-4}
+                        elif model_type == "advanced":
+                            model_config = {'filters': [32, 64, 128], 'dropout_rate': 0.3, 'learning_rate': 1e-4}
+                        else:  # residual
+                            model_config = {'num_blocks': 2, 'filters': 32, 'learning_rate': 1e-4}
 
-                history = cnn.train(
-                    X_train=data['X_train'],
-                    y_train=data['y_train'],
-                    X_val=data['X_val'],
-                    y_val=data['y_val'],
-                    epochs=st.session_state[f'training_epochs_{dataset_name.lower()}'],
-                    batch_size=st.session_state[f'training_batch_size_{dataset_name.lower()}'],
-                    data_augmentation=True,
-                    save_path=save_path
-                )
+                    detail_text.text("Compilando modelo con optimizador Adam...")
+                    model = cnn.build_model(model_type, **model_config)
+                    progress_bar.progress(25)
 
-                progress_bar.progress(100)
-                status_text.text("¡Entrenamiento completado!")
+                    # Fase 3: Configuración del entrenamiento
+                    status_text.markdown("**⚙️ Fase 3/5: Configuración del Entrenamiento**")
+                    detail_text.text("Preparando generadores de datos y callbacks...")
+                    epochs = st.session_state[f'training_epochs_{dataset_name.lower()}']
+                    batch_size = st.session_state[f'training_batch_size_{dataset_name.lower()}']
 
-                # Mostrar resultados
-                st.success(f"Modelo {dataset_name} entrenado exitosamente!")
+                    # Calcular número total de pasos
+                    total_samples = len(data['X_train'])
+                    steps_per_epoch = total_samples // batch_size
 
-                # Métricas finales
-                final_acc = history['val_accuracy'][-1]
-                final_loss = history['val_loss'][-1]
+                    layer_info.markdown(f"""
+                    **Parámetros de Entrenamiento:**
+                    - Épocas: {epochs}
+                    - Tamaño de batch: {batch_size}
+                    - Muestras totales: {total_samples:,}
+                    - Pasos por época: {steps_per_epoch}
+                    - Aumento de datos: Activado
+                    """)
+                    progress_bar.progress(35)
 
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("Accuracy Final", f"{final_acc:.4f}")
-                with col2:
-                    st.metric("Loss Final", f"{final_loss:.4f}")
+                    # Fase 4: Entrenamiento
+                    status_text.markdown("**🚀 Fase 4/5: Entrenamiento del Modelo**")
 
-                # Gráfico de curvas de aprendizaje
-                st.markdown("### 📊 Curvas de Aprendizaje")
-                fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+                    # Mapear nombres de dataset a nombres de directorio
+                    dataset_dir_map = {
+                        "CIFAR-10": "cifar10",
+                        "MNIST": "mnist"
+                    }
+                    dataset_dir_name = dataset_dir_map.get(dataset_name, dataset_name.lower().replace("-", ""))
+                    save_path = os.path.join("models", dataset_dir_name, f"{model_type}_trained.keras")
 
-                axes[0].plot(history['accuracy'], label='Entrenamiento')
-                axes[0].plot(history['val_accuracy'], label='Validación')
-                axes[0].set_title('Accuracy vs Épocas')
-                axes[0].set_xlabel('Épocas')
-                axes[0].set_ylabel('Accuracy')
-                axes[0].legend()
-                axes[0].grid(True, alpha=0.3)
+                    # Entrenar con progreso detallado
+                    detail_text.text("Iniciando entrenamiento con data augmentation...")
 
-                axes[1].plot(history['loss'], label='Entrenamiento')
-                axes[1].plot(history['val_loss'], label='Validación')
-                axes[1].set_title('Loss vs Épocas')
-                axes[1].set_xlabel('Épocas')
-                axes[1].set_ylabel('Loss')
-                axes[1].legend()
-                axes[1].grid(True, alpha=0.3)
+                    # Crear un callback personalizado para progreso detallado
+                    class TrainingProgressCallback:
+                        def __init__(self, progress_bar, status_text, detail_text, epoch_progress, total_epochs):
+                            self.progress_bar = progress_bar
+                            self.status_text = status_text
+                            self.detail_text = detail_text
+                            self.epoch_progress = epoch_progress
+                            self.total_epochs = total_epochs
+                            self.current_epoch = 0
 
-                plt.tight_layout()
-                st.pyplot(fig)
+                        def on_epoch_begin(self, epoch, logs=None):
+                            self.current_epoch = epoch + 1
+                            progress = 35 + (epoch / self.total_epochs) * 55  # De 35% a 90%
+                            self.progress_bar.progress(min(int(progress), 90))
 
-            except Exception as e:
-                st.error(f"Error durante el entrenamiento: {e}")
-                progress_bar.empty()
-                status_text.empty()
+                            self.epoch_progress.markdown(f"**Época {self.current_epoch}/{self.total_epochs}**")
+                            self.detail_text.text(f"Procesando época {self.current_epoch} - Forward pass en capas convolucionales...")
+
+                        def on_epoch_end(self, epoch, logs=None):
+                            if logs:
+                                acc = logs.get('accuracy', 0) * 100
+                                val_acc = logs.get('val_accuracy', 0) * 100
+                                loss = logs.get('loss', 0)
+                                val_loss = logs.get('val_loss', 0)
+
+                                self.detail_text.text(".3f")
+                                self.layer_info.text(f"✓ Capas convolucionales procesadas | ✓ Backpropagation completado | ✓ Pesos actualizados")
+
+                    # Crear callback
+                    progress_callback = TrainingProgressCallback(
+                        progress_bar, status_text, detail_text, epoch_progress, epochs
+                    )
+
+                    # Entrenar modelo
+                    history = cnn.train(
+                        X_train=data['X_train'],
+                        y_train=data['y_train'],
+                        X_val=data['X_val'],
+                        y_val=data['y_val'],
+                        epochs=epochs,
+                        batch_size=batch_size,
+                        data_augmentation=True,
+                        save_path=save_path,
+                        progress_callback=progress_callback
+                    )
+
+                    # Fase 5: Finalización
+                    status_text.markdown("**✅ Fase 5/5: Finalización**")
+                    detail_text.text("Guardando modelo entrenado...")
+                    progress_bar.progress(95)
+
+                    epoch_progress.markdown("**Entrenamiento Completado**")
+                    layer_info.markdown("**Resumen del Modelo Entrenado:**")
+                    progress_bar.progress(100)
+                    status_text.markdown("**🎉 ¡Entrenamiento completado exitosamente!**")
+
+                    # Limpiar elementos de progreso detallado
+                    time.sleep(1)  # Pequeña pausa para mostrar el mensaje final
+
+                    # Mostrar resultados
+                    st.success(f"Modelo {model_type} para {dataset_name} entrenado exitosamente!")
+
+                    # Métricas finales
+                    final_acc = history['val_accuracy'][-1]
+                    final_loss = history['val_loss'][-1]
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric("Accuracy Final", f"{final_acc:.4f}")
+                    with col2:
+                        st.metric("Loss Final", f"{final_loss:.4f}")
+
+                    # Gráfico de curvas de aprendizaje
+                    st.markdown("### 📊 Curvas de Aprendizaje")
+                    fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+
+                    axes[0].plot(history['accuracy'], label='Entrenamiento')
+                    axes[0].plot(history['val_accuracy'], label='Validación')
+                    axes[0].set_title('Accuracy vs Épocas')
+                    axes[0].set_xlabel('Épocas')
+                    axes[0].set_ylabel('Accuracy')
+                    axes[0].legend()
+                    axes[0].grid(True, alpha=0.3)
+
+                    axes[1].plot(history['loss'], label='Entrenamiento')
+                    axes[1].plot(history['val_loss'], label='Validación')
+                    axes[1].set_title('Loss vs Épocas')
+                    axes[1].set_xlabel('Épocas')
+                    axes[1].set_ylabel('Loss')
+                    axes[1].legend()
+                    axes[1].grid(True, alpha=0.3)
+
+                    plt.tight_layout()
+                    st.pyplot(fig)
+
+                except Exception as e:
+                    st.error(f"Error durante el entrenamiento: {e}")
+                    # Limpiar elementos de progreso en caso de error
+                    progress_bar.empty()
+                    status_text.empty()
+                    detail_text.empty()
+                    epoch_progress.empty()
+                    layer_info.empty()
 
         else:
             st.info("Configura los parámetros y haz clic en 'Iniciar Entrenamiento'")
