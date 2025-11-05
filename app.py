@@ -901,6 +901,10 @@ def show_predictions_section(data_loader, data, dataset_name, input_shape):
         key=f"predict_model_type_{dataset_name.lower()}"
     )
 
+    # Mostrar advertencia específica para modelo residual en MNIST
+    if selected_model_type == "residual" and dataset_name == "MNIST":
+        st.warning("⚠️ **Modelo Residual no disponible para MNIST:** No existe un modelo residual entrenado para MNIST. Se utilizará el modelo avanzado como alternativa.")
+
     st.markdown("### 📸 Cargar Imagen para Predicción")
 
     col1, col2 = st.columns([1, 2])
@@ -1032,15 +1036,16 @@ def show_predictions_section(data_loader, data, dataset_name, input_shape):
                             if os.path.exists(trained_path):
                                 model_path = trained_path
                             else:
-                                # Fallback a modelo pre-entrenado
+                                # Fallback a modelo pre-entrenado (sin _trained)
                                 fallback_model = f"{selected_model_type}_model.keras"
                                 fallback_path = os.path.join(dataset_models_dir, fallback_model)
                                 if os.path.exists(fallback_path):
                                     model_path = fallback_path
+                                    st.warning(f"No se encontró modelo {selected_model_type} entrenado. Usando modelo pre-entrenado.")
                                 else:
                                     # Si no existe modelo residual, usar advanced como fallback
                                     if selected_model_type == "residual":
-                                        advanced_fallback = "advanced_model.keras"
+                                        advanced_fallback = "advanced_trained.keras"
                                         advanced_path = os.path.join(dataset_models_dir, advanced_fallback)
                                         if os.path.exists(advanced_path):
                                             model_path = advanced_path
