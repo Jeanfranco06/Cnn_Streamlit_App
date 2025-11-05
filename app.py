@@ -74,13 +74,24 @@ tab1, tab2 = st.tabs(["🎨 CIFAR-10 (Clasificación de Objetos)", "🔢 MNIST (
 # Función para cargar datos CIFAR-10
 @st.cache_data
 def load_cifar10_data():
-    """Carga los datos de CIFAR-10"""
+    """Carga los datos de CIFAR-10 con optimización de memoria"""
     try:
+        # Liberar memoria antes de cargar
+        import gc
+        gc.collect()
+
         data_loader = CIFAR10DataLoader(validation_split=0.1, random_state=42)
         data = data_loader.load_data()
+
+        # Convertir a tipos más eficientes
+        for key in ['X_train', 'X_val', 'X_test']:
+            if key in data:
+                data[key] = data[key].astype('float32')
+
         return data_loader, data
     except Exception as e:
         st.error(f"Error al cargar los datos de CIFAR-10: {e}")
+        st.error("CIFAR-10 requiere más memoria. Intenta recargar la página y usar solo un dataset a la vez.")
         return None, None
 
 # Función para cargar datos MNIST
@@ -90,6 +101,12 @@ def load_mnist_data():
     try:
         data_loader = MNISTDataLoader(validation_split=0.1, random_state=42)
         data = data_loader.load_data()
+
+        # Convertir a tipos más eficientes
+        for key in ['X_train', 'X_val', 'X_test']:
+            if key in data:
+                data[key] = data[key].astype('float32')
+
         return data_loader, data
     except Exception as e:
         st.error(f"Error al cargar los datos de MNIST: {e}")
