@@ -619,12 +619,13 @@ def show_training_section(cnn_class, data_loader, data, dataset_name, input_shap
                     from tensorflow.keras.callbacks import Callback
 
                     class TrainingProgressCallback(Callback):
-                        def __init__(self, progress_bar, status_text, detail_text, epoch_progress, total_epochs):
+                        def __init__(self, progress_bar, status_text, detail_text, epoch_progress, layer_info, total_epochs):
                             super().__init__()
                             self.progress_bar = progress_bar
                             self.status_text = status_text
                             self.detail_text = detail_text
                             self.epoch_progress = epoch_progress
+                            self.layer_info = layer_info
                             self.total_epochs = total_epochs
                             self.current_epoch = 0
 
@@ -649,7 +650,7 @@ def show_training_section(cnn_class, data_loader, data, dataset_name, input_shap
                     # Obtener callbacks existentes y agregar el nuestro
                     existing_callbacks = cnn.get_callbacks()
                     progress_callback = TrainingProgressCallback(
-                        progress_bar, status_text, detail_text, epoch_progress, epochs
+                        progress_bar, status_text, detail_text, epoch_progress, layer_info, epochs
                     )
                     all_callbacks = existing_callbacks + [progress_callback]
 
