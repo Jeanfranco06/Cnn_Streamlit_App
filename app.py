@@ -17,10 +17,10 @@ import pandas as pd
 # Agregar el directorio src al path
 sys.path.append('src')
 
-from data import CIFAR10DataLoader, MNISTDataLoader
-from model import CIFAR10CNN, MNISTCNN
-from evaluation import ModelEvaluator
-from utils import ExperimentTracker, ModelInspector, DataVisualizer
+from src.data import CIFAR10DataLoader, MNISTDataLoader
+from src.model import CIFAR10CNN, MNISTCNN
+from src.evaluation import ModelEvaluator
+from src.utils import ExperimentTracker, ModelInspector, DataVisualizer
 
 # Configurar página
 st.set_page_config(
