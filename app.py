@@ -46,12 +46,16 @@ with st.sidebar:
     st.markdown("""
     **Tema:** Redes Neuronales Convolucionales (CNN)
 
-    **Datasets:** CIFAR-10 y MNIST
+    **Objetivo:** Demostrar el funcionamiento de modelos CNN para clasificación de imágenes
 
-    **Objetivo:** Clasificar imágenes en múltiples categorías
+    **Aplicación:** Interfaz interactiva para explorar datasets, entrenar modelos y realizar predicciones
 
-    **Miembros del Grupo 9:**
-    - [Nombres de los miembros]
+    **Características:**
+    - Exploración de datasets CIFAR-10 y MNIST
+    - Arquitecturas CNN: Básica, Avanzada y Residual
+    - Entrenamiento en tiempo real
+    - Evaluación de rendimiento
+    - Predicciones interactivas
     """)
 
     st.markdown("---")
