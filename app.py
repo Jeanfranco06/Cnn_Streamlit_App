@@ -53,10 +53,11 @@ def clear_memory():
 st.warning("""
 ⚠️ **Optimización de Memoria para Streamlit Cloud**
 
-Esta aplicación está optimizada para usar menos memoria:
-- CIFAR-10: Solo 5,000 muestras de entrenamiento (en lugar de 50,000)
-- Recomendación: Comienza con MNIST que usa menos memoria
-- Si experimentas problemas, recarga la página (F5)
+Esta aplicación está altamente optimizada para usar menos memoria:
+- CIFAR-10: Solo 2,000 muestras de entrenamiento (96% menos que el original)
+- MNIST: Dataset completo (70,000 imágenes, bajo consumo de memoria)
+- **Recomendación: Comienza con MNIST** que es más eficiente
+- Si experimentas problemas, usa el botón "🧹 Limpiar Memoria" o recarga la página (F5)
 """)
 
 # Configurar estilo
@@ -102,8 +103,8 @@ with st.sidebar:
     - **Framework:** TensorFlow/Keras
     - **Lenguaje:** Python
     - **Interfaz:** Streamlit
-    - **Datasets:** CIFAR-10 (5,000 imágenes), MNIST (70,000 imágenes)
-    - **Optimización:** Subconjuntos reducidos para Streamlit Cloud
+    - **Datasets:** CIFAR-10 (2,000 imágenes), MNIST (70,000 imágenes)
+    - **Optimización:** Ultra-reducido para Streamlit Cloud
     """)
 
 # Crear pestañas principales
@@ -134,10 +135,10 @@ def load_cifar10_data():
         full_data = data_loader.load_data()
 
         # Reducir drásticamente el tamaño del dataset para Streamlit Cloud
-        # Usar solo 5,000 muestras de entrenamiento, 500 de validación y 1,000 de test
-        train_subset = 5000
-        val_subset = 500
-        test_subset = 1000
+        # Usar solo 2,000 muestras de entrenamiento, 200 de validación y 500 de test
+        train_subset = 2000
+        val_subset = 200
+        test_subset = 500
 
         reduced_data = {
             'X_train': full_data['X_train'][:train_subset],
