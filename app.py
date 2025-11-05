@@ -618,7 +618,7 @@ def show_evaluation_section(data_loader, data, dataset_name):
     else:
         st.error(f"Directorio de modelos para {dataset_name} no encontrado.")
 
-    if os.path.exists(model_path):
+    if model_path is not None and os.path.exists(model_path):
         cnn = load_model(model_path)
 
         if cnn is not None:
