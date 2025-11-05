@@ -74,24 +74,58 @@ tab1, tab2 = st.tabs(["🎨 CIFAR-10 (Clasificación de Objetos)", "🔢 MNIST (
 # Función para cargar datos CIFAR-10
 @st.cache_data
 def load_cifar10_data():
-    """Carga los datos de CIFAR-10 con optimización de memoria"""
+    """Carga un subconjunto reducido de CIFAR-10 para Streamlit Cloud"""
     try:
         # Liberar memoria antes de cargar
         import gc
         gc.collect()
 
+        # Limpiar cualquier dato de MNIST que pueda estar en memoria
+        if 'mnist_data_loaded' in st.session_state and st.session_state['mnist_data_loaded']:
+            if 'mnist_data_loader' in st.session_state:
+                del st.session_state['mnist_data_loader']
+            if 'mnist_data' in st.session_state:
+                del st.session_state['mnist_data']
+            st.session_state['mnist_data_loaded'] = False
+            gc.collect()
+
+        st.warning("⚠️ **CIFAR-10 en Streamlit Cloud:** Se cargará solo un subconjunto reducido de datos para evitar problemas de memoria.")
+
+        # Cargar datos completos primero
         data_loader = CIFAR10DataLoader(validation_split=0.1, random_state=42)
-        data = data_loader.load_data()
+        full_data = data_loader.load_data()
+
+        # Reducir drásticamente el tamaño del dataset para Streamlit Cloud
+        # Usar solo 10,000 muestras de entrenamiento, 1,000 de validación y 2,000 de test
+        train_subset = 10000
+        val_subset = 1000
+        test_subset = 2000
+
+        reduced_data = {
+            'X_train': full_data['X_train'][:train_subset],
+            'y_train': full_data['y_train'][:train_subset],
+            'X_val': full_data['X_val'][:val_subset],
+            'y_val': full_data['y_val'][:val_subset],
+            'X_test': full_data['X_test'][:test_subset],
+            'y_test': full_data['y_test'][:test_subset],
+            'class_names': full_data['class_names']
+        }
 
         # Convertir a tipos más eficientes
         for key in ['X_train', 'X_val', 'X_test']:
-            if key in data:
-                data[key] = data[key].astype('float32')
+            if key in reduced_data:
+                reduced_data[key] = reduced_data[key].astype('float16')
 
-        return data_loader, data
+        # Liberar memoria
+        del full_data
+        gc.collect()
+
+        st.success(f"✅ CIFAR-10 reducido cargado: {train_subset} train, {val_subset} val, {test_subset} test muestras")
+
+        return data_loader, reduced_data
     except Exception as e:
         st.error(f"Error al cargar los datos de CIFAR-10: {e}")
-        st.error("CIFAR-10 requiere más memoria. Intenta recargar la página y usar solo un dataset a la vez.")
+        st.error("💡 **Solución:** Intenta recargar la página (F5) y usar solo MNIST, que requiere menos memoria.")
         return None, None
 
 # Función para cargar datos MNIST
