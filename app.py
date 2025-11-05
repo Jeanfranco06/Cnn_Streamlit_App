@@ -649,41 +649,47 @@ def show_predictions_section(data_loader, data, dataset_name, input_shape):
                 )
 
             if uploaded_file is not None:
-                # Procesar imagen subida
-                image = Image.open(uploaded_file)
+                try:
+                    # Procesar imagen subida
+                    image = Image.open(uploaded_file)
 
-                if dataset_name == "CIFAR-10":
-                    image = image.resize((32, 32))
-                    image_array = np.array(image) / 255.0
+                    if dataset_name == "CIFAR-10":
+                        image = image.resize((32, 32))
+                        image_array = np.array(image) / 255.0
 
-                    # Asegurar que tenga 3 canales
-                    if len(image_array.shape) == 2:
-                        image_array = np.stack([image_array] * 3, axis=-1)
-                    elif image_array.shape[-1] == 4:
-                        image_array = image_array[:, :, :3]
-                else:  # MNIST
-                    # Mejor preprocesamiento para MNIST
-                    image = image.resize((28, 28)).convert('L')
+                        # Asegurar que tenga 3 canales
+                        if len(image_array.shape) == 2:
+                            image_array = np.stack([image_array] * 3, axis=-1)
+                        elif image_array.shape[-1] == 4:
+                            image_array = image_array[:, :, :3]
+                    else:  # MNIST
+                        # Mejor preprocesamiento para MNIST
+                        image = image.resize((28, 28)).convert('L')
 
-                    # Convertir a array y normalizar
-                    image_array = np.array(image, dtype=np.float32) / 255.0
+                        # Convertir a array y normalizar
+                        image_array = np.array(image, dtype=np.float32) / 255.0
 
-                    # Invertir colores si es necesario (fondo blanco -> fondo negro)
-                    if image_array.mean() > 0.5:  # Si la imagen es mayormente clara
-                        image_array = 1.0 - image_array
+                        # Invertir colores si es necesario (fondo blanco -> fondo negro)
+                        if image_array.mean() > 0.5:  # Si la imagen es mayormente clara
+                            image_array = 1.0 - image_array
 
-                    # Asegurar que tenga la forma correcta (28, 28, 1)
-                    if image_array.ndim == 2:
-                        image_array = np.expand_dims(image_array, axis=-1)
+                        # Asegurar que tenga la forma correcta (28, 28, 1)
+                        if image_array.ndim == 2:
+                            image_array = np.expand_dims(image_array, axis=-1)
 
-                    # Verificar dimensiones
-                    if image_array.shape != (28, 28, 1):
-                        st.error(f"Error: La imagen procesada tiene forma {image_array.shape}, se esperaba (28, 28, 1)")
-                        selected_image = None
-                        true_label = None
-                    else:
-                        selected_image = image_array
-                        true_label = "Desconocido (imagen subida)"
+                        # Verificar dimensiones
+                        if image_array.shape != (28, 28, 1):
+                            st.error(f"Error: La imagen procesada tiene forma {image_array.shape}, se esperaba (28, 28, 1)")
+                            selected_image = None
+                            true_label = None
+                        else:
+                            selected_image = image_array
+                            true_label = "Desconocido (imagen subida)"
+                except Exception as e:
+                    st.error(f"Error al procesar la imagen subida: {str(e)}")
+                    st.error("Por favor, asegúrate de subir un archivo de imagen válido (PNG, JPG, JPEG).")
+                    selected_image = None
+                    true_label = None
             else:
                 selected_image = None
                 true_label = None
@@ -833,85 +839,86 @@ def show_predictions_section(data_loader, data, dataset_name, input_shape):
         else:
             st.info("Selecciona o sube una imagen para realizar una predicción.")
 
-# Contenido de la pestaña CIFAR-10
-with tab1:
-    st.markdown("## 🎨 CIFAR-10: Clasificación de Imágenes de Objetos")
-    st.markdown("Dataset con 60,000 imágenes de 32x32 píxeles en 10 categorías diferentes.")
+# Función para mostrar contenido de pestaña con carga lazy
+def show_tab_content(dataset_name, cnn_class, input_shape):
+    """Muestra el contenido de una pestaña con carga lazy de datos"""
+    if dataset_name == "CIFAR-10":
+        emoji = "🎨"
+        description = "Dataset con 60,000 imágenes de 32x32 píxeles en 10 categorías diferentes."
+    else:
+        emoji = "🔢"
+        description = "Dataset con 70,000 imágenes de dígitos escritos a mano (0-9)."
 
-    # Sub-pestañas para CIFAR-10
-    cifar_tabs = st.tabs(["📊 Dataset", "🧠 Modelo", "🚀 Entrenamiento", "📊 Evaluación", "🔮 Predicciones"])
+    st.markdown(f"## {emoji} {dataset_name}: {description.split(':')[0]}")
+    st.markdown(description)
 
-    # Cargar datos CIFAR-10
-    cifar_data_loader, cifar_data = load_cifar10_data()
+    # Sub-pestañas
+    tabs = st.tabs(["📊 Dataset", "🧠 Modelo", "🚀 Entrenamiento", "📊 Evaluación", "🔮 Predicciones"])
 
-    with cifar_tabs[0]:  # Dataset
-        show_dataset_section(cifar_data_loader, cifar_data, "CIFAR-10")
+    # Estado de carga de datos
+    data_key = f"{dataset_name.lower()}_data_loaded"
+    if data_key not in st.session_state:
+        st.session_state[data_key] = False
 
-    with cifar_tabs[1]:  # Modelo
-        show_model_section(CIFAR10CNN, "CIFAR-10", (32, 32, 3))
+    # Botón para cargar datos
+    if not st.session_state[data_key]:
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button(f"📥 Cargar Datos {dataset_name}", type="primary", key=f"load_{dataset_name.lower()}_btn"):
+                with st.spinner(f"Cargando datos de {dataset_name}..."):
+                    try:
+                        if dataset_name == "CIFAR-10":
+                            data_loader, data = load_cifar10_data()
+                        else:
+                            data_loader, data = load_mnist_data()
 
-    with cifar_tabs[2]:  # Entrenamiento
-        if cifar_data_loader and cifar_data:
-            show_training_section(CIFAR10CNN, cifar_data_loader, cifar_data, "CIFAR-10", (32, 32, 3))
-        else:
-            st.error("No se pudieron cargar los datos de CIFAR-10.")
+                        if data_loader and data:
+                            st.session_state[f"{dataset_name.lower()}_data_loader"] = data_loader
+                            st.session_state[f"{dataset_name.lower()}_data"] = data
+                            st.session_state[data_key] = True
+                            st.success(f"✅ Datos de {dataset_name} cargados exitosamente!")
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Error al cargar los datos de {dataset_name}")
+                    except Exception as e:
+                        st.error(f"❌ Error al cargar datos: {str(e)}")
+            else:
+                st.info(f"💡 Haz clic en 'Cargar Datos {dataset_name}' para comenzar")
+                return
 
-    with cifar_tabs[3]:  # Evaluación
-        if cifar_data_loader and cifar_data:
+    # Si los datos están cargados, mostrar las pestañas
+    if st.session_state[data_key]:
+        data_loader = st.session_state[f"{dataset_name.lower()}_data_loader"]
+        data = st.session_state[f"{dataset_name.lower()}_data"]
+
+        with tabs[0]:  # Dataset
+            show_dataset_section(data_loader, data, dataset_name)
+
+        with tabs[1]:  # Modelo
+            show_model_section(cnn_class, dataset_name, input_shape)
+
+        with tabs[2]:  # Entrenamiento
+            show_training_section(cnn_class, data_loader, data, dataset_name, input_shape)
+
+        with tabs[3]:  # Evaluación
             # Lazy loading - only run evaluation when tab is active
-            if st.session_state.get('cifar_eval_active', False) or st.button("🔍 Ejecutar Evaluación CIFAR-10", key="cifar_eval_btn"):
-                st.session_state['cifar_eval_active'] = True
-                show_evaluation_section(cifar_data_loader, cifar_data, "CIFAR-10")
+            eval_key = f"{dataset_name.lower()}_eval_active"
+            if st.session_state.get(eval_key, False) or st.button(f"🔍 Ejecutar Evaluación {dataset_name}", key=f"{dataset_name.lower()}_eval_btn"):
+                st.session_state[eval_key] = True
+                show_evaluation_section(data_loader, data, dataset_name)
             else:
                 st.info("Haz clic en 'Ejecutar Evaluación' para ver las métricas del modelo.")
-        else:
-            st.error("No se pudieron cargar los datos de CIFAR-10.")
 
-    with cifar_tabs[4]:  # Predicciones
-        if cifar_data_loader and cifar_data:
-            show_predictions_section(cifar_data_loader, cifar_data, "CIFAR-10", (32, 32, 3))
-        else:
-            st.error("No se pudieron cargar los datos de CIFAR-10.")
+        with tabs[4]:  # Predicciones
+            show_predictions_section(data_loader, data, dataset_name, input_shape)
+
+# Contenido de la pestaña CIFAR-10
+with tab1:
+    show_tab_content("CIFAR-10", CIFAR10CNN, (32, 32, 3))
 
 # Contenido de la pestaña MNIST
 with tab2:
-    st.markdown("## 🔢 MNIST: Reconocimiento de Dígitos")
-    st.markdown("Dataset con 70,000 imágenes de dígitos escritos a mano (0-9).")
-
-    # Sub-pestañas para MNIST
-    mnist_tabs = st.tabs(["📊 Dataset", "🧠 Modelo", "🚀 Entrenamiento", "📊 Evaluación", "🔮 Predicciones"])
-
-    # Cargar datos MNIST
-    mnist_data_loader, mnist_data = load_mnist_data()
-
-    with mnist_tabs[0]:  # Dataset
-        show_dataset_section(mnist_data_loader, mnist_data, "MNIST")
-
-    with mnist_tabs[1]:  # Modelo
-        show_model_section(MNISTCNN, "MNIST", (28, 28, 1))
-
-    with mnist_tabs[2]:  # Entrenamiento
-        if mnist_data_loader and mnist_data:
-            show_training_section(MNISTCNN, mnist_data_loader, mnist_data, "MNIST", (28, 28, 1))
-        else:
-            st.error("No se pudieron cargar los datos de MNIST.")
-
-    with mnist_tabs[3]:  # Evaluación
-        if mnist_data_loader and mnist_data:
-            # Lazy loading - only run evaluation when tab is active
-            if st.session_state.get('mnist_eval_active', False) or st.button("🔍 Ejecutar Evaluación MNIST", key="mnist_eval_btn"):
-                st.session_state['mnist_eval_active'] = True
-                show_evaluation_section(mnist_data_loader, mnist_data, "MNIST")
-            else:
-                st.info("Haz clic en 'Ejecutar Evaluación' para ver las métricas del modelo.")
-        else:
-            st.error("No se pudieron cargar los datos de MNIST.")
-
-    with mnist_tabs[4]:  # Predicciones
-        if mnist_data_loader and mnist_data:
-            show_predictions_section(mnist_data_loader, mnist_data, "MNIST", (28, 28, 1))
-        else:
-            st.error("No se pudieron cargar los datos de MNIST.")
+    show_tab_content("MNIST", MNISTCNN, (28, 28, 1))
 
 # Footer
 st.markdown("---")
