@@ -31,6 +31,34 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Función para limpiar memoria
+def clear_memory():
+    """Limpia la memoria eliminando objetos grandes"""
+    import gc
+    # Limpiar variables de session state relacionadas con datos
+    keys_to_clear = ['cifar10_data_loader', 'cifar10_data', 'mnist_data_loader', 'mnist_data']
+    for key in keys_to_clear:
+        if key in st.session_state:
+            del st.session_state[key]
+
+    # Limpiar variables de entrenamiento
+    training_keys = [k for k in st.session_state.keys() if k.startswith('training_')]
+    for key in training_keys:
+        del st.session_state[key]
+
+    # Forzar garbage collection
+    gc.collect()
+
+# Advertencia de memoria al inicio
+st.warning("""
+⚠️ **Optimización de Memoria para Streamlit Cloud**
+
+Esta aplicación está optimizada para usar menos memoria:
+- CIFAR-10: Solo 5,000 muestras de entrenamiento (en lugar de 50,000)
+- Recomendación: Comienza con MNIST que usa menos memoria
+- Si experimentas problemas, recarga la página (F5)
+""")
+
 # Configurar estilo
 plt.style.use('default')
 sns.set_palette("husl")
@@ -60,13 +88,22 @@ with st.sidebar:
 
     st.markdown("---")
 
+    # Botón para limpiar memoria
+    if st.button("🧹 Limpiar Memoria", help="Libera memoria eliminando datos y modelos cargados"):
+        clear_memory()
+        st.success("✅ Memoria limpiada exitosamente!")
+        st.rerun()
+
+    st.markdown("---")
+
     # Información técnica
     st.markdown("### 🔧 Configuración Técnica")
     st.markdown("""
     - **Framework:** TensorFlow/Keras
     - **Lenguaje:** Python
     - **Interfaz:** Streamlit
-    - **Datasets:** CIFAR-10 (60,000 imágenes), MNIST (70,000 dígitos)
+    - **Datasets:** CIFAR-10 (5,000 imágenes), MNIST (70,000 imágenes)
+    - **Optimización:** Subconjuntos reducidos para Streamlit Cloud
     """)
 
 # Crear pestañas principales
@@ -75,7 +112,7 @@ tab1, tab2 = st.tabs(["🎨 CIFAR-10 (Clasificación de Objetos)", "🔢 MNIST (
 # Función para cargar datos CIFAR-10
 @st.cache_data
 def load_cifar10_data():
-    """Carga un subconjunto reducido de CIFAR-10 para Streamlit Cloud"""
+    """Carga un subconjunto mínimo de CIFAR-10 para Streamlit Cloud"""
     try:
         # Liberar memoria antes de cargar
         import gc
@@ -90,17 +127,17 @@ def load_cifar10_data():
             st.session_state['mnist_data_loaded'] = False
             gc.collect()
 
-        st.warning("⚠️ **CIFAR-10 en Streamlit Cloud:** Se cargará solo un subconjunto reducido de datos para evitar problemas de memoria.")
+        st.warning("⚠️ **CIFAR-10 en Streamlit Cloud:** Se cargará solo un subconjunto mínimo de datos para evitar problemas de memoria.")
 
         # Cargar datos completos primero
         data_loader = CIFAR10DataLoader(validation_split=0.1, random_state=42)
         full_data = data_loader.load_data()
 
         # Reducir drásticamente el tamaño del dataset para Streamlit Cloud
-        # Usar solo 10,000 muestras de entrenamiento, 1,000 de validación y 2,000 de test
-        train_subset = 10000
-        val_subset = 1000
-        test_subset = 2000
+        # Usar solo 5,000 muestras de entrenamiento, 500 de validación y 1,000 de test
+        train_subset = 5000
+        val_subset = 500
+        test_subset = 1000
 
         reduced_data = {
             'X_train': full_data['X_train'][:train_subset],
@@ -112,17 +149,17 @@ def load_cifar10_data():
             'class_names': full_data['class_names']
         }
 
-        # Convertir a tipos más eficientes para memoria, pero mantener compatibilidad con matplotlib
+        # Convertir a tipos más eficientes para memoria
         for key in ['X_train', 'X_val', 'X_test']:
             if key in reduced_data:
-                # Usar float32 en lugar de float16 para compatibilidad con matplotlib
+                # Usar float32 para compatibilidad con matplotlib y eficiencia de memoria
                 reduced_data[key] = reduced_data[key].astype('float32')
 
-        # Liberar memoria
+        # Liberar memoria inmediatamente
         del full_data
         gc.collect()
 
-        st.success(f"✅ CIFAR-10 reducido cargado: {train_subset} train, {val_subset} val, {test_subset} test muestras")
+        st.success(f"✅ CIFAR-10 ultra-reducido cargado: {train_subset} train, {val_subset} val, {test_subset} test muestras")
 
         return data_loader, reduced_data
     except Exception as e:
