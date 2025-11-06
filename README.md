@@ -1,6 +1,6 @@
 # CNN Streamlit App - Grupo 9
 
-Aplicación web interactiva para demostración de modelos de Redes Neuronales Convolucionales (CNN) con datasets CIFAR-10 y MNIST.
+Aplicación web interactiva para demostración de modelos de Redes Neuronales Convolucionales (CNN) con el dataset MNIST.
 
 ## 🚀 Despliegue en Streamlit Cloud
 
@@ -69,9 +69,6 @@ cnn-streamlit-app/
 │   ├── evaluation.py        # Evaluación de modelos
 │   └── utils.py             # Utilidades
 ├── models/                   # Modelos entrenados
-│   ├── cifar10/
-│   │   ├── basic_trained.keras
-│   │   └── advanced_model.keras
 │   └── mnist/
 │       ├── basic_trained.keras
 │       └── advanced_trained.keras
@@ -81,14 +78,13 @@ cnn-streamlit-app/
 
 ## 🎯 Funcionalidades
 
-### Datasets Disponibles
-- **CIFAR-10**: 60,000 imágenes de 32x32 píxeles en 10 categorías
+### Dataset Disponible
 - **MNIST**: 70,000 imágenes de dígitos escritos a mano (0-9)
 
 ### Modelos Disponibles
 - **Básico**: Arquitectura CNN simple
 - **Avanzado**: CNN con Batch Normalization y regularización
-- **Residual**: Arquitectura con bloques residuales (solo CIFAR-10)
+- **Residual**: Arquitectura con bloques residuales
 
 ### Secciones de la Aplicación
 1. **📊 Dataset**: Exploración y visualización de datos
@@ -109,14 +105,10 @@ cnn-streamlit-app/
 
 ## 📈 Rendimiento de Modelos
 
-### CIFAR-10
-- **Modelo Básico**: ~75-80% accuracy
-- **Modelo Avanzado**: ~85-90% accuracy
-- **Modelo Residual**: ~87-92% accuracy
-
 ### MNIST
 - **Modelo Básico**: ~98-99% accuracy
 - **Modelo Avanzado**: ~99%+ accuracy
+- **Modelo Residual**: ~99%+ accuracy
 
 ## 🤝 Contribuidores
 

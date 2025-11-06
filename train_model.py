@@ -1,5 +1,5 @@
 """
-Script de entrenamiento para el modelo CNN CIFAR-10
+Script de entrenamiento para el modelo CNN MNIST
 """
 
 import os
@@ -13,8 +13,8 @@ import matplotlib.pyplot as plt
 # Agregar el directorio src al path
 sys.path.append('src')
 
-from data import CIFAR10DataLoader
-from model import CIFAR10CNN
+from data import MNISTDataLoader
+from model import MNISTCNN
 from evaluation import ModelEvaluator
 from utils import ExperimentTracker, ModelInspector, DataVisualizer
 
@@ -22,19 +22,19 @@ def main():
     """
     Función principal para entrenar el modelo CNN
     """
-    parser = argparse.ArgumentParser(description='Entrenar modelo CNN para CIFAR-10')
+    parser = argparse.ArgumentParser(description='Entrenar modelo CNN para MNIST')
     parser.add_argument('--model_type', type=str, default='advanced',
                        choices=['basic', 'advanced', 'residual'],
                        help='Tipo de modelo a entrenar')
-    parser.add_argument('--epochs', type=int, default=50,
+    parser.add_argument('--epochs', type=int, default=20,
                        help='Número de épocas de entrenamiento')
-    parser.add_argument('--batch_size', type=int, default=64,
+    parser.add_argument('--batch_size', type=int, default=128,
                        help='Tamaño del batch')
-    parser.add_argument('--learning_rate', type=float, default=0.0001,
+    parser.add_argument('--learning_rate', type=float, default=0.001,
                        help='Tasa de aprendizaje')
     parser.add_argument('--data_augmentation', action='store_true', default=True,
                        help='Usar aumento de datos')
-    parser.add_argument('--experiment_name', type=str, default='cnn_cifar10',
+    parser.add_argument('--experiment_name', type=str, default='cnn_mnist',
                        help='Nombre del experimento')
     parser.add_argument('--save_plots', action='store_true', default=True,
                        help='Guardar gráficos generados')
@@ -42,7 +42,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 60)
-    print("ENTRENAMIENTO DEL MODELO CNN CIFAR-10")
+    print("ENTRENAMIENTO DEL MODELO CNN MNIST")
     print("=" * 60)
     print(f"Fecha y hora: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Tipo de modelo: {args.model_type}")
@@ -54,12 +54,12 @@ def main():
 
     # 1. Cargar y preparar datos
     print("\n1. CARGANDO DATOS...")
-    data_loader = CIFAR10DataLoader(validation_split=0.1, random_state=42)
+    data_loader = MNISTDataLoader(validation_split=0.1, random_state=42)
     data = data_loader.load_data()
 
     # Información del dataset
     info = data_loader.get_dataset_info()
-    print(f"Dataset CIFAR-10 cargado:")
+    print(f"Dataset MNIST cargado:")
     print(f"  - Clases: {info['num_classes']}")
     print(f"  - Entrenamiento: {info['train_samples']} muestras")
     print(f"  - Validación: {info['val_samples']} muestras")
@@ -88,24 +88,24 @@ def main():
 
     if args.model_type == 'basic':
         model_config = {
-            'filters': [32, 64, 128],
-            'dropout_rate': 0.5,
+            'filters': [32, 64],
+            'dropout_rate': 0.25,
             'learning_rate': args.learning_rate
         }
     elif args.model_type == 'advanced':
         model_config = {
-            'filters': [64, 128, 256, 512],
+            'filters': [32, 64, 128],
             'dropout_rate': 0.3,
             'learning_rate': args.learning_rate
         }
     elif args.model_type == 'residual':
         model_config = {
-            'num_blocks': 3,
-            'filters': 64,
+            'num_blocks': 2,
+            'filters': 32,
             'learning_rate': args.learning_rate
         }
 
-    cnn = CIFAR10CNN()
+    cnn = MNISTCNN()
     model = cnn.build_model(args.model_type, **model_config)
 
     # Mostrar resumen del modelo
@@ -129,7 +129,7 @@ def main():
         epochs=args.epochs,
         batch_size=args.batch_size,
         data_augmentation=args.data_augmentation,
-        save_path=os.path.join("models", f"cifar10_{args.model_type}_model.keras")
+        save_path=os.path.join("models", f"mnist_{args.model_type}_model.keras")
     )
 
     # Guardar historial de entrenamiento
@@ -241,7 +241,7 @@ def main():
     print(f"Precision: {evaluation_results['precision']:.4f}")
     print(f"Recall: {evaluation_results['recall']:.4f}")
     print(f"F1-Score: {evaluation_results['f1_score']:.4f}")
-    print(f"Modelo guardado en: models/cifar10_{args.model_type}_model.keras")
+    print(f"Modelo guardado en: models/mnist_{args.model_type}_model.keras")
     print(f"Resultados guardados en: experiments/{experiment_id}/")
 
     # Finalizar experimento

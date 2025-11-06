@@ -1,5 +1,5 @@
 """
-Módulo de evaluación y métricas para modelos CNN CIFAR-10
+Módulo de evaluación y métricas para modelos CNN MNIST
 """
 
 import numpy as np
@@ -34,10 +34,7 @@ class ModelEvaluator:
         Args:
             class_names: Nombres de las clases
         """
-        self.class_names = class_names or [
-            'Avión', 'Automóvil', 'Pájaro', 'Gato', 'Ciervo',
-            'Perro', 'Rana', 'Caballo', 'Barco', 'Camión'
-        ]
+        self.class_names = class_names or [str(i) for i in range(10)]
         self.num_classes = len(self.class_names)
 
     def evaluate_model(self, model, X_test: np.ndarray, y_test: np.ndarray,
@@ -430,7 +427,7 @@ class ModelEvaluator:
         """
         report = []
         report.append("=" * 60)
-        report.append("REPORTE DE EVALUACIÓN DEL MODELO CNN CIFAR-10")
+        report.append("REPORTE DE EVALUACIÓN DEL MODELO CNN MNIST")
         report.append("=" * 60)
 
         # Métricas generales
@@ -542,7 +539,7 @@ def compare_models(models_results: Dict[str, Dict[str, Any]],
 
 if __name__ == "__main__":
     # Ejemplo de uso
-    print("Módulo de evaluación para CNN CIFAR-10")
+    print("Módulo de evaluación para CNN MNIST")
     print("Use este módulo para evaluar modelos entrenados")
 
     # Crear evaluador

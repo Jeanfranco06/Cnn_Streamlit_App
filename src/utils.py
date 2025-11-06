@@ -1,5 +1,5 @@
 """
-Módulo de utilidades para el proyecto CNN CIFAR-10
+Módulo de utilidades para el proyecto CNN MNIST
 """
 
 import os
@@ -550,7 +550,7 @@ def save_experiment_summary(experiment_data: Dict[str, Any], save_path: str):
 
 if __name__ == "__main__":
     # Ejemplo de uso
-    print("Módulo de utilidades para CNN CIFAR-10")
+    print("Módulo de utilidades para CNN MNIST")
     print("Funciones disponibles:")
     print("- ExperimentTracker: Para rastrear experimentos")
     print("- ModelInspector: Para inspeccionar modelos")
