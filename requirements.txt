@@ -12,5 +12,3 @@ scikeras>=0.12.0
 streamlit>=1.28.0
 scipy>=1.11.0
 kaggle>=1.5.0
-+++++++ REPLACE</diff>
-</xai:function_call name="replace_in_file">
