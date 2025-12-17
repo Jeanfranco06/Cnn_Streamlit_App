@@ -38,6 +38,14 @@ def main():
                        help='Nombre del experimento')
     parser.add_argument('--save_plots', action='store_true', default=True,
                        help='Guardar gráficos generados')
+    parser.add_argument('--cross_validation', action='store_true', default=False,
+                       help='Realizar validación cruzada')
+    parser.add_argument('--cv_folds', type=int, default=5,
+                       help='Número de folds para validación cruzada')
+    parser.add_argument('--grid_search', action='store_true', default=False,
+                       help='Realizar búsqueda de hiperparámetros con GridSearchCV')
+    parser.add_argument('--optimize_hyperparams', action='store_true', default=False,
+                       help='Optimizar hiperparámetros antes del entrenamiento final')
 
     args = parser.parse_args()
 
@@ -50,6 +58,10 @@ def main():
     print(f"Batch size: {args.batch_size}")
     print(f"Learning rate: {args.learning_rate}")
     print(f"Data augmentation: {args.data_augmentation}")
+    print(f"Cross validation: {args.cross_validation}")
+    print(f"CV folds: {args.cv_folds}")
+    print(f"Grid search: {args.grid_search}")
+    print(f"Optimize hyperparameters: {args.optimize_hyperparams}")
     print("=" * 60)
 
     # 1. Cargar y preparar datos
@@ -77,6 +89,10 @@ def main():
         'batch_size': args.batch_size,
         'learning_rate': args.learning_rate,
         'data_augmentation': args.data_augmentation,
+        'cross_validation': args.cross_validation,
+        'cv_folds': args.cv_folds,
+        'grid_search': args.grid_search,
+        'optimize_hyperparams': args.optimize_hyperparams,
         'dataset_info': info,
         'timestamp': datetime.now().isoformat()
     }
@@ -108,6 +124,10 @@ def main():
     cnn = MNISTCNN()
     model = cnn.build_model(args.model_type, **model_config)
 
+    # Inicializar evaluador temprano para CV y GridSearch
+    evaluator = ModelEvaluator(class_names=data['class_names'])
+
+
     # Mostrar resumen del modelo
     print("\nResumen del modelo:")
     print(cnn.get_model_summary())
@@ -118,8 +138,90 @@ def main():
     for key, value in model_info.items():
         print(f"  {key}: {value}")
 
-    # 4. Entrenar el modelo
-    print(f"\n4. ENTRENANDO MODELO ({args.epochs} ÉPOCAS)...")
+    # 4. Optimización de hiperparámetros (si se solicita)
+    best_params = None
+    if args.optimize_hyperparams or args.grid_search:
+        print(f"\n4. OPTIMIZANDO HIPERPARÁMETROS...")
+
+        # Definir espacio de búsqueda para GridSearchCV
+        param_grid = {
+            'learning_rate': [1e-4, 1e-3, 1e-2],
+            'batch_size': [32, 64, 128],
+            'epochs': [10, 20, 30]
+        }
+
+        # Función constructora del modelo para GridSearchCV
+        def create_model_for_cv(learning_rate=1e-3, dropout_rate=0.3):
+            """Función para crear modelo compatible con GridSearchCV"""
+            model_cv = cnn.build_model(args.model_type,
+                                     filters=model_config['filters'],
+                                     dropout_rate=dropout_rate,
+                                     learning_rate=learning_rate)
+            return model_cv
+
+        # Realizar GridSearchCV
+        grid_results = evaluator.perform_grid_search_cv(
+            model_builder_func=create_model_for_cv,
+            X=np.concatenate([data['X_train'], data['X_val']]),
+            y=np.concatenate([data['y_train'], data['y_val']]),
+            param_grid=param_grid,
+            cv_folds=args.cv_folds,
+            epochs=10,  # Épocas reducidas para CV
+            batch_size=64,
+            scoring='accuracy'
+        )
+
+        best_params = grid_results['best_params']
+        print(f"✓ Mejores parámetros encontrados: {best_params}")
+
+        # Actualizar configuración con mejores parámetros
+        args.learning_rate = best_params.get('learning_rate', args.learning_rate)
+        args.batch_size = best_params.get('batch_size', args.batch_size)
+        args.epochs = best_params.get('epochs', args.epochs)
+
+        # Reconstruir modelo con mejores parámetros
+        model_config['learning_rate'] = args.learning_rate
+        model = cnn.build_model(args.model_type, **model_config)
+
+        # Guardar resultados de GridSearchCV
+        tracker.save_results({'grid_search_results': grid_results})
+
+    # 5. Validación cruzada (si se solicita)
+    cv_results = None
+    if args.cross_validation:
+        print(f"\n5. REALIZANDO VALIDACIÓN CRUZADA...")
+
+        # Combinar datos de entrenamiento y validación para CV
+        X_cv = np.concatenate([data['X_train'], data['X_val']])
+        y_cv = np.concatenate([data['y_train'], data['y_val']])
+
+        cv_results = evaluator.perform_cross_validation(
+            model_builder_func=lambda **kwargs: cnn.build_model(args.model_type, **{**model_config, **kwargs}),
+            X=X_cv,
+            y=y_cv,
+            cv_folds=args.cv_folds,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            scoring='accuracy'
+        )
+
+        print(f"✓ CV completado - Accuracy promedio: {cv_results['mean_score']:.4f} (+/- {cv_results['std_score']:.4f})")
+
+        # Guardar resultados de CV
+        tracker.save_results({'cv_results': cv_results})
+
+        # Visualizar resultados de CV si hay gráficos habilitados
+        if args.save_plots:
+            plots_dir = os.path.join("experiments", experiment_id, "plots")
+            os.makedirs(plots_dir, exist_ok=True)
+            evaluator.plot_cross_validation_results(
+                cv_results,
+                save_path=os.path.join(plots_dir, "cross_validation_results.png")
+            )
+
+    # 6. Entrenar el modelo
+    step_num = 6 if (args.optimize_hyperparams or args.grid_search or args.cross_validation) else 4
+    print(f"\n{step_num}. ENTRENANDO MODELO ({args.epochs} ÉPOCAS)...")
 
     history = cnn.train(
         X_train=data['X_train'],
@@ -135,8 +237,9 @@ def main():
     # Guardar historial de entrenamiento
     tracker.save_history(history)
 
-    # 5. Evaluar el modelo
-    print("\n5. EVALUANDO MODELO...")
+    # 7. Evaluar el modelo
+    eval_step = 7 if (args.optimize_hyperparams or args.grid_search or args.cross_validation) else 5
+    print(f"\n{eval_step}. EVALUANDO MODELO...")
 
     evaluator = ModelEvaluator(class_names=data['class_names'])
 
@@ -149,9 +252,10 @@ def main():
     # Guardar resultados de evaluación
     tracker.save_results(evaluation_results)
 
-    # 6. Generar visualizaciones
+    # 8. Generar visualizaciones
     if args.save_plots:
-        print("\n6. GENERANDO VISUALIZACIONES...")
+        viz_step = 8 if (args.optimize_hyperparams or args.grid_search or args.cross_validation) else 6
+        print(f"\n{viz_step}. GENERANDO VISUALIZACIONES...")
 
         # Crear directorio para gráficos
         plots_dir = os.path.join("experiments", experiment_id, "plots")
@@ -220,8 +324,9 @@ def main():
         except:
             print("No se pudo generar el diagrama de arquitectura (graphviz no disponible)")
 
-    # 7. Generar reporte de evaluación
-    print("\n7. GENERANDO REPORTE...")
+    # 9. Generar reporte de evaluación
+    report_step = 9 if (args.optimize_hyperparams or args.grid_search or args.cross_validation) else 7
+    print(f"\n{report_step}. GENERANDO REPORTE...")
 
     report = evaluator.generate_evaluation_report(
         evaluation_results,
@@ -233,8 +338,9 @@ def main():
     print("="*60)
     print(report)
 
-    # 8. Resumen final
-    print("\n8. RESUMEN FINAL")
+    # 10. Resumen final
+    summary_step = 10 if (args.optimize_hyperparams or args.grid_search or args.cross_validation) else 8
+    print(f"\n{summary_step}. RESUMEN FINAL")
     print("="*60)
     print(f"Experimento completado: {experiment_id}")
     print(f"Accuracy: {evaluation_results['accuracy']:.4f}")

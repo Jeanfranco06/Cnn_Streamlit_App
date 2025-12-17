@@ -44,52 +44,119 @@ class EmotionClassifier:
         # Load or create model
         self.load_or_create_model()
 
-    def create_model(self):
+    def create_model(self, model_type='basic', **kwargs):
         """Crear arquitectura del modelo CNN para clasificación de emociones"""
+        if model_type == 'basic':
+            return self._create_basic_model(**kwargs)
+        elif model_type == 'advanced':
+            return self._create_advanced_model(**kwargs)
+        elif model_type == 'residual':
+            return self._create_residual_model(**kwargs)
+        else:
+            raise ValueError(f"Tipo de modelo desconocido: {model_type}")
+
+    def _create_basic_model(self, filters=[32, 64], dropout_rate=0.25, learning_rate=1e-4):
+        """Crear modelo básico CNN para emociones con mejor arquitectura"""
         model = Sequential()
 
         # Primer bloque convolucional
-        model.add(Conv2D(32, (3, 3), activation='relu', input_shape=self.input_shape, padding='same'))
+        model.add(Conv2D(filters[0], (3, 3), activation='relu', input_shape=self.input_shape, padding='same'))
         model.add(BatchNormalization())
-        model.add(Conv2D(32, (3, 3), activation='relu', padding='same'))
+        model.add(Conv2D(filters[0], (3, 3), activation='relu', padding='same'))
         model.add(BatchNormalization())
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Dropout(0.25))
+        model.add(Dropout(dropout_rate))
 
         # Segundo bloque convolucional
-        model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
+        model.add(Conv2D(filters[1], (3, 3), activation='relu', padding='same'))
         model.add(BatchNormalization())
-        model.add(Conv2D(64, (3, 3), activation='relu', padding='same'))
+        model.add(Conv2D(filters[1], (3, 3), activation='relu', padding='same'))
         model.add(BatchNormalization())
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Dropout(0.25))
+        model.add(Dropout(dropout_rate))
 
         # Tercer bloque convolucional
         model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
         model.add(BatchNormalization())
-        model.add(Conv2D(128, (3, 3), activation='relu', padding='same'))
-        model.add(BatchNormalization())
         model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Dropout(0.25))
-
-        # Cuarto bloque convolucional
-        model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
-        model.add(BatchNormalization())
-        model.add(Conv2D(256, (3, 3), activation='relu', padding='same'))
-        model.add(BatchNormalization())
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Dropout(0.25))
+        model.add(Dropout(dropout_rate))
 
         # Aplanar y capas densas
         model.add(Flatten())
-        model.add(Dense(512, activation='relu'))
+        model.add(Dense(256, activation='relu'))
         model.add(BatchNormalization())
         model.add(Dropout(0.5))
-        model.add(Dense(256, activation='relu'))
+        model.add(Dense(128, activation='relu'))
         model.add(BatchNormalization())
         model.add(Dropout(0.5))
         model.add(Dense(self.num_classes, activation='softmax'))
 
+        return model
+
+    def _create_advanced_model(self, filters=[32, 64, 128], dropout_rate=0.3, learning_rate=1e-4):
+        """Crear modelo avanzado CNN para emociones con Batch Normalization y regularización"""
+        model = Sequential()
+
+        # Primer bloque convolucional
+        model.add(Conv2D(filters[0], (3, 3), activation='relu', input_shape=self.input_shape, padding='same',
+                        kernel_regularizer=tf.keras.regularizers.l2(0.01)))
+        model.add(BatchNormalization())
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Dropout(dropout_rate))
+
+        # Segundo bloque convolucional
+        model.add(Conv2D(filters[1], (3, 3), activation='relu', padding='same',
+                        kernel_regularizer=tf.keras.regularizers.l2(0.01)))
+        model.add(BatchNormalization())
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Dropout(dropout_rate))
+
+        # Tercer bloque convolucional
+        model.add(Conv2D(filters[2], (3, 3), activation='relu', padding='same',
+                        kernel_regularizer=tf.keras.regularizers.l2(0.01)))
+        model.add(BatchNormalization())
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Dropout(dropout_rate))
+
+        # Global Average Pooling
+        model.add(tf.keras.layers.GlobalAveragePooling2D())
+        model.add(Dense(self.num_classes, activation='softmax'))
+
+        return model
+
+    def _create_residual_model(self, num_blocks=2, filters=32, learning_rate=1e-4):
+        """Crear modelo residual simplificado para emociones"""
+        inputs = tf.keras.Input(shape=self.input_shape)
+
+        # Initial convolution
+        x = Conv2D(filters, (3, 3), activation='relu', padding='same')(inputs)
+        x = BatchNormalization()(x)
+
+        # Residual blocks
+        for i in range(num_blocks):
+            # Save input for skip connection
+            skip = x
+
+            # First conv in block
+            x = Conv2D(filters, (3, 3), activation='relu', padding='same')(x)
+            x = BatchNormalization()(x)
+
+            # Second conv in block
+            x = Conv2D(filters, (3, 3), activation='relu', padding='same')(x)
+            x = BatchNormalization()(x)
+
+            # Skip connection
+            x = tf.keras.layers.Add()([x, skip])
+
+            # Max pooling after each block
+            x = MaxPooling2D(pool_size=(2, 2))(x)
+            x = Dropout(0.25)(x)
+
+        # Global Average Pooling and output
+        x = tf.keras.layers.GlobalAveragePooling2D()(x)
+        outputs = Dense(self.num_classes, activation='softmax')(x)
+
+        model = tf.keras.Model(inputs=inputs, outputs=outputs)
         return model
 
     def load_or_create_model(self):
@@ -98,11 +165,8 @@ class EmotionClassifier:
             try:
                 self.model = load_model(self.model_path)
                 print(f"Modelo cargado desde {self.model_path}")
-                # Construir el modelo para asegurarse de que esté listo
-                self.model.build((None, self.input_shape[0], self.input_shape[1], self.input_shape[2]))
-                # Hacer una predicción dummy para asegurar que las capas estén inicializadas
-                dummy_input = tf.zeros((1, self.input_shape[0], self.input_shape[1], self.input_shape[2]))
-                _ = self.model(dummy_input, training=False)
+                # Ensure model is properly built and initialized
+                self.ensure_model_built()
             except Exception as e:
                 print(f"Error cargando modelo: {e}")
                 self.model = self.create_model()

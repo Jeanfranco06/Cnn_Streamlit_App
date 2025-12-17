@@ -734,6 +734,10 @@ def show_predictions_section(data_loader, data, dataset_name, input_shape):
         )
 
         if input_method == "Imagen del dataset":
+            # Initialize session state for selected image index
+            if f'selected_image_idx_{dataset_name.lower()}' not in st.session_state:
+                st.session_state[f'selected_image_idx_{dataset_name.lower()}'] = 0
+
             # Seleccionar imagen aleatoria del test set
             if st.button(f"🎲 Seleccionar Imagen Aleatoria - {dataset_name}",
                        key=f"random_button_{dataset_name.lower()}"):
@@ -744,9 +748,13 @@ def show_predictions_section(data_loader, data, dataset_name, input_shape):
             image_idx = st.slider(
                 f"Seleccionar imagen del test set - {dataset_name}:",
                 0, len(data['X_test'])-1,
-                st.session_state.get(f'selected_image_idx_{dataset_name.lower()}', 0),
+                st.session_state[f'selected_image_idx_{dataset_name.lower()}'],
                 key=f"slider_{dataset_name.lower()}"
             )
+
+            # Update session state if slider changed
+            if image_idx != st.session_state[f'selected_image_idx_{dataset_name.lower()}']:
+                st.session_state[f'selected_image_idx_{dataset_name.lower()}'] = image_idx
 
             selected_image = data['X_test'][image_idx]
             true_label = data['class_names'][data['y_test'][image_idx]]
@@ -1305,14 +1313,8 @@ def show_emotion_training_section():
 
                     # Configurar y construir modelo
                     classifier = EmotionClassifier()
-                    if model_type == "basic":
-                        model_config = {'filters': [32, 64], 'dropout_rate': 0.25, 'learning_rate': 1e-4}
-                    elif model_type == "advanced":
-                        model_config = {'filters': [32, 64, 128], 'dropout_rate': 0.3, 'learning_rate': 1e-4}
-                    else:  # residual
-                        model_config = {'num_blocks': 2, 'filters': 32, 'learning_rate': 1e-4}
-
-                    # Para emociones, necesitamos adaptar el modelo
+                    # Create the specific model type
+                    classifier.model = classifier.create_model(model_type=model_type)
                     classifier.compile_model(learning_rate=1e-4)
                     progress_bar.progress(25)
 
@@ -1629,16 +1631,38 @@ def show_emotion_predictions_section():
     """Muestra la sección de predicciones de emociones"""
     st.header("🔮 Predicciones de Emociones")
 
-    st.markdown("### 📸 Subir Imagen Facial")
+    st.markdown("### 📸 Subir Imagen Facial o Usar Cámara")
 
-    uploaded_file = st.file_uploader(
-        "Elige una imagen facial",
-        type=["jpg", "jpeg", "png"],
-        key="emotion_uploader"
+    # Option to choose between file upload or camera
+    input_option = st.radio(
+        "Método de entrada:",
+        ["Subir imagen", "Usar cámara"],
+        key="input_option"
     )
+
+    uploaded_file = None
+    camera_image = None
+
+    if input_option == "Subir imagen":
+        uploaded_file = st.file_uploader(
+            "Elige una imagen facial",
+            type=["jpg", "jpeg", "png"],
+            key="emotion_uploader"
+        )
+    else:  # Usar cámara
+        camera_image = st.camera_input(
+            "Captura una imagen facial",
+            key="emotion_camera"
+        )
 
     if uploaded_file is not None:
         image = Image.open(uploaded_file)
+    elif camera_image is not None:
+        image = Image.open(camera_image)
+    else:
+        image = None
+
+    if image is not None:
 
         col1, col2 = st.columns(2)
 
@@ -1649,100 +1673,69 @@ def show_emotion_predictions_section():
         with col2:
             st.subheader("🎭 Resultado de Predicción")
 
+            # Model selection for emotions
+            emotion_model_options = ["basic", "advanced", "residual"]
+            selected_emotion_model = st.selectbox(
+                "Selecciona el tipo de modelo:",
+                emotion_model_options,
+                key="emotion_model_select"
+            )
+
             try:
-                # Cargar modelo de emociones
-                classifier = EmotionClassifier()
+                # Load selected emotion model
+                dataset_models_dir = os.path.join("models", "emotion")
+                model_path = None
 
-                # Hacer predicción
-                prediction, confidence, probabilities = classifier.predict(image)
+                if os.path.exists(dataset_models_dir):
+                    # Try trained model first
+                    trained_model = f"{selected_emotion_model}_trained.keras"
+                    trained_path = os.path.join(dataset_models_dir, trained_model)
 
-                # Mostrar predicción principal
-                emotion_emojis = {
-                    'feliz': '😊', 'triste': '😢', 'neutral': '😐',
-                    'enojado': '😠', 'sorprendido': '😲', 'asustado': '😨', 'disgustado': '🤢'
-                }
+                    if os.path.exists(trained_path):
+                        model_path = trained_path
+                    else:
+                        # Fallback to basic model
+                        basic_model = "emotion_model.h5"
+                        basic_path = os.path.join(dataset_models_dir, basic_model)
+                        if os.path.exists(basic_path):
+                            model_path = basic_path
+                            st.info(f"Usando modelo básico. Para usar {selected_emotion_model}, entrena el modelo primero.")
 
-                emotion_display = prediction.title()
-                emoji = emotion_emojis.get(prediction.lower(), '❓')
-                st.success(f"{emoji} **{emotion_display}** ({confidence:.1%} confianza)")
+                if model_path:
+                    classifier = EmotionClassifier(model_path=model_path)
 
-                # Mostrar probabilidades
-                st.subheader("📊 Probabilidades por Emoción")
-                prob_rows = []
-                for emotion, prob in probabilities.items():
-                    emoji_prob = emotion_emojis.get(emotion.lower(), '❓')
-                    prob_rows.append({
-                        'Emoción': f"{emoji_prob} {emotion.title()}",
-                        'Probabilidad': f"{prob:.1%}"
-                    })
+                    # Hacer predicción
+                    prediction, confidence, probabilities = classifier.predict(image)
 
-                prob_df = pd.DataFrame(prob_rows)
-                st.dataframe(prob_df, use_container_width=True)
+                    # Mostrar predicción principal
+                    emotion_emojis = {
+                        'feliz': '😊', 'triste': '😢', 'neutral': '😐',
+                        'enojado': '😠', 'sorprendido': '😲', 'asustado': '😨', 'disgustado': '🤢'
+                    }
+
+                    emotion_display = prediction.title()
+                    emoji = emotion_emojis.get(prediction.lower(), '❓')
+                    st.success(f"{emoji} **{emotion_display}** ({confidence:.1%} confianza)")
+
+                    # Mostrar probabilidades
+                    st.subheader("📊 Probabilidades por Emoción")
+                    prob_rows = []
+                    for emotion, prob in probabilities.items():
+                        emoji_prob = emotion_emojis.get(emotion.lower(), '❓')
+                        prob_rows.append({
+                            'Emoción': f"{emoji_prob} {emotion.title()}",
+                            'Probabilidad': f"{prob:.1%}"
+                        })
+
+                    prob_df = pd.DataFrame(prob_rows)
+                    st.dataframe(prob_df, use_container_width=True)
+                else:
+                    st.error("No se encontró un modelo de emociones entrenado.")
 
             except Exception as e:
                 st.error(f"Error en predicción: {str(e)}")
 
-        # Grad-CAM visualization
-        st.subheader("🔥 Visualización Grad-CAM")
-        st.markdown("""
-        **¿Qué es Grad-CAM?** Es una técnica que muestra qué partes de la imagen fueron más importantes
-        para que el modelo haga su predicción. Los colores cálidos (rojos/amarillos) indican áreas de alta atención,
-        mientras que los colores fríos (azules) muestran áreas menos relevantes para la predicción.
-        """)
 
-        try:
-            # Load trained model for Grad-CAM
-            dataset_models_dir = os.path.join("models", "emotion")
-            model_path = None
-
-            if os.path.exists(dataset_models_dir):
-                # Try trained model first
-                trained_model = "emotion_model_trained.keras"
-                trained_path = os.path.join(dataset_models_dir, trained_model)
-
-                if os.path.exists(trained_path):
-                    model_path = trained_path
-                else:
-                    # Fallback to pre-trained model
-                    fallback_model = "emotion_model.h5"
-                    fallback_path = os.path.join(dataset_models_dir, fallback_model)
-                    if os.path.exists(fallback_path):
-                        model_path = fallback_path
-
-            if model_path:
-                try:
-                    # Load the trained model and ensure it's built
-                    classifier = EmotionClassifier(model_path=model_path)
-
-                    # Compile the model (required for Grad-CAM to work)
-                    classifier.compile_model(learning_rate=0.001)
-
-                    # Ensure the model is properly built for Grad-CAM
-                    classifier.ensure_model_built()
-
-                    # Additional build call to make sure
-                    dummy_input = tf.zeros((1, 48, 48, 1))
-                    _ = classifier.model(dummy_input, training=False)
-
-                    # Create Grad-CAM and generate heatmap
-                    gradcam = GradCAM(classifier.model)
-                    heatmap_fig = gradcam.generate_heatmap(image)
-                    st.pyplot(heatmap_fig)
-                    st.caption("El mapa de calor muestra dónde se enfocó el modelo para hacer la predicción")
-
-                except Exception as gradcam_error:
-                    st.warning(f"Error generando Grad-CAM: {str(gradcam_error)}")
-                    st.info("💡 **Nota:** Grad-CAM requiere que el modelo esté completamente inicializado y compilado. "
-                           "Asegúrate de que el modelo de emociones esté entrenado correctamente.")
-            else:
-                st.warning("No se encontró un modelo entrenado para generar Grad-CAM. Entrena un modelo primero.")
-
-        except Exception as e:
-            st.warning(f"Error generando Grad-CAM: {str(e)}")
-            st.info("💡 **Grad-CAM ayuda a entender:**\n"
-                   "- Qué características faciales usa el modelo\n"
-                   "- Si el modelo se enfoca en expresiones reales\n"
-                   "- Áreas importantes como ojos, boca y cejas")
     else:
         st.info("Sube una imagen facial para realizar una predicción de emoción.")
 

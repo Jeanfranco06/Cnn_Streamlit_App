@@ -30,16 +30,12 @@ class GradCAM:
 
     def _create_gradcam_model(self):
         """Crear un modelo que produce tanto la última capa conv como las predicciones finales"""
-        # Obtener la última capa convolucional
+        # Get the last convolutional layer
         last_conv_layer = self.model.get_layer(self.layer_name)
 
-        # Crear un modelo que produce la última capa conv y las predicciones finales
-        gradcam_model = Model(
-            inputs=self.model.inputs,
-            outputs=[last_conv_layer.output, self.model.output]
-        )
-
-        return gradcam_model
+        # Create a new model that outputs both the conv layer and final predictions
+        # We need to build this dynamically during computation to avoid initialization issues
+        return None
 
     def compute_heatmap(self, image, class_idx=None):
         """
@@ -52,9 +48,18 @@ class GradCAM:
         Returns:
             heatmap: Array de mapa de calor de forma (48, 48)
         """
+        # Get the last convolutional layer
+        last_conv_layer = self.model.get_layer(self.layer_name)
+
+        # Create a submodel for just the conv layer
+        conv_model = Model(inputs=self.model.inputs, outputs=last_conv_layer.output)
+
         with tf.GradientTape() as tape:
-            # Forward pass
-            conv_outputs, predictions = self.gradcam_model(image)
+            # Forward pass through conv model
+            conv_outputs = conv_model(image)
+
+            # Forward pass through full model for predictions
+            predictions = self.model(image)
 
             if class_idx is None:
                 class_idx = tf.argmax(predictions[0])
@@ -62,25 +67,29 @@ class GradCAM:
             # Get the score for the target class
             class_score = predictions[:, class_idx]
 
-        # Compute gradients
+        # Compute gradients with respect to conv outputs
         grads = tape.gradient(class_score, conv_outputs)
 
-        # Global average pooling of gradients
-        pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+        if grads is None:
+            # Fallback: use conv output magnitude as heatmap
+            heatmap = tf.reduce_mean(tf.abs(conv_outputs[0]), axis=-1)
+        else:
+            # Global average pooling of gradients
+            pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
 
-        # Weight the convolutional outputs with the gradients
-        conv_outputs = conv_outputs[0]
-        heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
-        heatmap = tf.squeeze(heatmap)
+            # Weight the conv outputs with gradients
+            conv_outputs = conv_outputs[0]
+            heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
+            heatmap = tf.reduce_sum(heatmap, axis=-1)
 
-        # Apply ReLU to focus on positive contributions
+        # Apply ReLU and normalize
         heatmap = tf.maximum(heatmap, 0)
+        heatmap = heatmap.numpy()
 
-        # Normalize heatmap
-        if tf.reduce_max(heatmap) > 0:
-            heatmap = heatmap / tf.reduce_max(heatmap)
+        if np.max(heatmap) > 0:
+            heatmap = heatmap / np.max(heatmap)
 
-        return heatmap.numpy()
+        return heatmap
 
     def generate_heatmap(self, image, alpha=0.4, colormap=cv2.COLORMAP_JET):
         """

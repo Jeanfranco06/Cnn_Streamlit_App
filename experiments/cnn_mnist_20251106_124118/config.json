@@ -1,0 +1,39 @@
+{
+  "model_type": "basic",
+  "epochs": 2,
+  "batch_size": 128,
+  "learning_rate": 0.001,
+  "data_augmentation": true,
+  "cross_validation": true,
+  "cv_folds": 3,
+  "grid_search": false,
+  "optimize_hyperparams": false,
+  "dataset_info": {
+    "num_classes": 10,
+    "class_names": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "train_samples": 44100,
+    "val_samples": 4900,
+    "test_samples": 21000,
+    "image_shape": [
+      28,
+      28,
+      1
+    ],
+    "total_samples": 70000,
+    "train_split": 0.63,
+    "val_split": 0.07,
+    "test_split": 0.3
+  },
+  "timestamp": "2025-11-06T12:41:18.141481"
+}
