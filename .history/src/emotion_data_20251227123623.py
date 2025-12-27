@@ -222,6 +222,8 @@ class EmotionDataLoader:
             print("📝 Creando dataset mínimo de prueba...")
 
             # Create a highly realistic synthetic face dataset
+            import numpy as np
+
             emotions = list(self.emotions.keys())
             X = []
             labels = []
@@ -248,36 +250,6 @@ class EmotionDataLoader:
 
                     X.append(img_normalized)
                     labels.append(emotion_idx)
-
-            X = np.array(X)
-            y = np.array(labels)
-
-            # Convert to categorical
-            y = to_categorical(y, num_classes=len(self.emotions))
-
-            # Split the data
-            self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-                X, y, test_size=test_size, random_state=42, stratify=labels
-            )
-
-            self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
-                self.X_train, self.y_train, test_size=validation_split, random_state=42
-            )
-
-            print(f"✅ Dataset sintético creado: {len(X)} muestras")
-            print(f"Muestras de entrenamiento: {len(self.X_train)}")
-            print(f"Muestras de validación: {len(self.X_val)}")
-            print(f"Muestras de prueba: {len(self.X_test)}")
-
-            return {
-                'X_train': self.X_train,
-                'y_train': self.y_train,
-                'X_val': self.X_val,
-                'y_val': self.y_val,
-                'X_test': self.X_test,
-                'y_test': self.y_test,
-                'class_names': self.emotion_labels
-            }
 
     def _generate_realistic_face_base(self):
         """Generate a realistic base face structure"""
@@ -454,92 +426,6 @@ class EmotionDataLoader:
 
         # Add subtle shadows under features
         # Under eyes
-        img[16:20, 8:20] = np.clip(img[16:20, 8:20] * 0.9, 0, 255)   # Left
-        img[16:20, 28:40] = np.clip(img[16:20, 28:40] * 0.9, 0, 255) # Right
-
-        # Under nose
-        img[25:30, 20:28] = np.clip(img[25:30, 20:28] * 0.85, 0, 255)
-
-        return img.astype(np.uint8)
-
-        if missing_images > 0:
-            print(f"⚠️  {missing_images} imágenes no encontradas, {processed_count} procesadas correctamente")
-
-        X = np.array(X)
-        y = np.array(labels)
-
-        # Convertir etiquetas a categóricas
-        y = to_categorical(y, num_classes=len(self.emotions))
-
-        # Dividir en entrenamiento y prueba
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            X, y, test_size=test_size, random_state=42, stratify=labels
-        )
-
-        # Dividir aún más el entrenamiento en entrenamiento y validación
-        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
-            self.X_train, self.y_train, test_size=validation_split, random_state=42
-        )
-
-        print(f"ExpW - Muestras procesadas: {len(X)}")
-        print(f"Muestras de entrenamiento: {len(self.X_train)}")
-        print(f"Muestras de validación: {len(self.X_val)}")
-        print(f"Muestras de prueba: {len(self.X_test)}")
-
-        return {
-            'X_train': self.X_train,
-            'y_train': self.y_train,
-            'X_val': self.X_val,
-            'y_val': self.y_val,
-            'X_test': self.X_test,
-            'y_test': self.y_test,
-            'class_names': self.emotion_labels
-        }
-
-    def get_dataset_info(self):
-        """Obtener información básica sobre el conjunto de datos"""
-        if self.data is None:
-            self.load_data()
-
-        # Contar muestras por emoción
-        emotion_counts = self.data['emotion'].value_counts().sort_index()
-
-        info = {
-            'total_samples': len(self.data),
-            'train_samples': len(self.X_train) if self.X_train is not None else 0,
-            'test_samples': len(self.X_test) if self.X_test is not None else 0,
-            'validation_samples': len(self.X_val) if hasattr(self, 'X_val') and self.X_val is not None else 0,
-            'num_classes': len(self.emotions),
-            'image_shape': (48, 48, 1),
-            'emotion_distribution': {
-                self.emotions[i]: count for i, count in emotion_counts.items()
-            }
-        }
-
-        return info
-
-    def augment_data(self, X, y, augmentation_factor=2):
-        """Aplicar aumento de datos para incrementar el tamaño del conjunto de datos"""
-        augmented_X = []
-        augmented_y = []
-
-        # Datos originales
-        augmented_X.extend(X)
-        augmented_y.extend(y)
-
-        # Aumento de datos
-        for i in range(len(X)):
-            img = X[i].reshape(48, 48)
-
-            # Volteo horizontal
-            flipped = cv2.flip(img, 1)
-            augmented_X.append(flipped.reshape(48, 48, 1))
-            augmented_y.append(y[i])
-
-            # Rotación aleatoria
-            angle = np.random.randint(-15, 15)
-            M = cv2.getRotationMatrix2D((24, 24), angle, 1)
-            rotated = cv2.warpAffine(img, M, (48, 48))
             augmented_X.append(rotated.reshape(48, 48, 1))
             augmented_y.append(y[i])
 

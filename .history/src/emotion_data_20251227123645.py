@@ -462,6 +462,36 @@ class EmotionDataLoader:
 
         return img.astype(np.uint8)
 
+            X = np.array(X)
+            y = np.array(labels)
+
+            # Convert to categorical
+            y = to_categorical(y, num_classes=len(self.emotions))
+
+            # Split the data
+            self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
+                X, y, test_size=test_size, random_state=42, stratify=labels
+            )
+
+            self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
+                self.X_train, self.y_train, test_size=validation_split, random_state=42
+            )
+
+            print(f"✅ Dataset sintético creado: {len(X)} muestras")
+            print(f"Muestras de entrenamiento: {len(self.X_train)}")
+            print(f"Muestras de validación: {len(self.X_val)}")
+            print(f"Muestras de prueba: {len(self.X_test)}")
+
+            return {
+                'X_train': self.X_train,
+                'y_train': self.y_train,
+                'X_val': self.X_val,
+                'y_val': self.y_val,
+                'X_test': self.X_test,
+                'y_test': self.y_test,
+                'class_names': self.emotion_labels
+            }
+
         if missing_images > 0:
             print(f"⚠️  {missing_images} imágenes no encontradas, {processed_count} procesadas correctamente")
 
