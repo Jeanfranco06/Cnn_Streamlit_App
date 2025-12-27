@@ -60,7 +60,7 @@ sns.set_palette("husl")
 
 # Título principal
 st.title("🧠 Clasificación con Redes Neuronales Convolucionales")
-st.markdown("### Aplicación interactiva para reconocimiento de dígitos MNIST y emociones faciales")
+st.markdown("### Aplicación interactiva para reconocimiento de dígitos MNIST y emociones faciales RAF-DB")
 st.markdown("---")
 
 # Sidebar con información del proyecto
@@ -1024,20 +1024,20 @@ def load_emotion_data():
         st.error(f"Error al cargar los datos de emociones: {e}")
         return None, None
 
-# Función para mostrar contenido de emociones
+# Función para mostrar contenido de emociones (ExpW)
 def show_emotion_content():
-    """Muestra el contenido para el dataset de emociones reales"""
+    """Muestra el contenido para el dataset ExpW"""
 
-    st.markdown("## 😊 Emociones - Dataset Real")
-    st.markdown("**Dataset Real**: Imágenes faciales reales del directorio data/test/ organizadas por emociones.")
+    st.markdown("## 😊 ExpW - Reconocimiento de Emociones")
+    st.markdown("**ExpW**: Dataset Expression in-the-Wild con 91,793 imágenes reales de alta resolución tomadas de internet.")
 
-    st.info("📊 **Características**: Imágenes reales de rostros | 🎯 **Clases**: 7 emociones | 🔍 **Mejor para**: Demostración realista")
+    st.info("📊 **Características**: 91,793 imágenes faciales reales de alta resolución | 🎯 **Clases**: 7 emociones | 🔍 **Mejor para**: Aplicaciones reales")
 
     # Sub-pestañas
     tabs = st.tabs(["📊 Dataset", "🚀 Entrenamiento", "📊 Evaluación", "🔮 Predicciones"])
 
     # Estado de carga de datos
-    data_key = "emotion_data_loaded"
+    data_key = "expw_data_loaded"
     if data_key not in st.session_state:
         st.session_state[data_key] = False
 
@@ -1045,46 +1045,46 @@ def show_emotion_content():
     if not st.session_state[data_key]:
         col1, col2 = st.columns([1, 3])
         with col1:
-            if st.button("📥 Cargar Datos de Emociones", type="primary", key="load_emotion_btn"):
-                with st.spinner("Cargando imágenes reales de emociones..."):
+            if st.button("📥 Cargar Datos ExpW", type="primary", key="load_expw_btn"):
+                with st.spinner("Cargando datos de ExpW..."):
                     try:
                         data_loader, data = load_emotion_data()
 
                         if data_loader and data:
-                            st.session_state["emotion_data_loader"] = data_loader
-                            st.session_state["emotion_data"] = data
+                            st.session_state["expw_data_loader"] = data_loader
+                            st.session_state["expw_data"] = data
                             st.session_state[data_key] = True
-                            st.success("✅ Datos de emociones cargados exitosamente!")
+                            st.success("✅ Datos de ExpW cargados exitosamente!")
                             st.rerun()
                         else:
-                            st.error("❌ Error al cargar los datos de emociones")
+                            st.error("❌ Error al cargar los datos de ExpW")
                     except Exception as e:
                         st.error(f"❌ Error al cargar datos: {str(e)}")
             else:
-                st.info("💡 Haz clic en 'Cargar Datos de Emociones' para comenzar")
+                st.info("💡 Haz clic en 'Cargar Datos ExpW' para comenzar")
                 return
 
     # Si los datos están cargados, mostrar las pestañas
     if st.session_state[data_key]:
-        data_loader = st.session_state["emotion_data_loader"]
-        data = st.session_state["emotion_data"]
+        data_loader = st.session_state["expw_data_loader"]
+        data = st.session_state["expw_data"]
 
         with tabs[0]:  # Dataset
-            show_emotion_dataset_section(data_loader, data, "Dataset Real")
+            show_emotion_dataset_section(data_loader, data, "ExpW")
 
         with tabs[1]:  # Entrenamiento
-            show_emotion_training_section("Dataset Real")
+            show_emotion_training_section("ExpW")
 
         with tabs[2]:  # Evaluación
-            eval_key = "emotion_eval_active"
-            if st.session_state.get(eval_key, False) or st.button("🔍 Ejecutar Evaluación", key="emotion_eval_btn"):
+            eval_key = "expw_eval_active"
+            if st.session_state.get(eval_key, False) or st.button("🔍 Ejecutar Evaluación ExpW", key="expw_eval_btn"):
                 st.session_state[eval_key] = True
-                show_emotion_evaluation_section(data_loader, data, "Dataset Real")
+                show_emotion_evaluation_section(data_loader, data, "ExpW")
             else:
                 st.info("Haz clic en 'Ejecutar Evaluación' para ver las métricas del modelo.")
 
         with tabs[3]:  # Predicciones
-            show_emotion_predictions_section("Dataset Real")
+            show_emotion_predictions_section("ExpW")
 
 # Función para mostrar sección de dataset de emociones
 def show_emotion_dataset_section(data_loader, data, dataset_name):
@@ -1762,7 +1762,7 @@ def show_emotion_predictions_section(selected_dataset):
         st.info("Sube una imagen facial para realizar una predicción de emoción.")
 
 # Crear pestañas principales para datasets
-main_tabs = st.tabs(["🔢 MNIST - Dígitos", "😊 Emociones - Dataset Real"])
+main_tabs = st.tabs(["🔢 MNIST - Dígitos", "😊 RAF-DB - Emociones"])
 
 with main_tabs[0]:  # MNIST
     show_tab_content("MNIST", MNISTCNN, (28, 28, 1))
@@ -1780,7 +1780,7 @@ with col1:
     st.markdown("""
     **Datasets:**
     - MNIST (70,000 imágenes de dígitos)
-    - Dataset Real (imágenes faciales organizadas por emociones)
+    - RAF-DB (30,000 imágenes de emociones reales)
     """)
 
 with col2:
