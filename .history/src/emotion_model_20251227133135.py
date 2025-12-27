@@ -195,14 +195,14 @@ class EmotionClassifier:
         else:
             datagen = ImageDataGenerator()
 
-        # Callbacks por defecto - ajustados para formas geométricas simples
+        # Callbacks por defecto - ajustados para datos sintéticos
         default_callbacks = [
             EarlyStopping(
                 monitor='val_accuracy',
-                patience=200,  # Muy paciente para formas simples
+                patience=50,  # Mucho más paciente para datos sintéticos
                 restore_best_weights=True,
                 verbose=1,
-                min_delta=0.01  # Más permisivo para aprendizaje rápido
+                min_delta=0.001  # Solo parar si mejora menos de 0.1%
             ),
             ModelCheckpoint(
                 model_save_path,
@@ -213,8 +213,8 @@ class EmotionClassifier:
             ReduceLROnPlateau(
                 monitor='val_accuracy',
                 factor=0.5,
-                patience=20,  # Mucha paciencia antes de reducir LR
-                min_lr=1e-5,
+                patience=10,  # Más paciencia antes de reducir LR
+                min_lr=1e-6,
                 verbose=1
             )
         ]
