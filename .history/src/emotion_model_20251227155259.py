@@ -86,39 +86,33 @@ class EmotionClassifier:
 
         return model
 
-    def _create_advanced_model(self, filters=[64, 128, 256], dropout_rate=0.4, learning_rate=1e-4):
-        """Crear modelo avanzado CNN para emociones con Batch Normalization"""
+    def _create_advanced_model(self, filters=[32, 64, 128], dropout_rate=0.3, learning_rate=1e-4):
+        """Crear modelo avanzado CNN para emociones con Batch Normalization y regularización"""
         model = Sequential()
 
         # Primer bloque convolucional
-        model.add(Conv2D(filters[0], (3, 3), activation='relu', input_shape=self.input_shape, padding='same'))
-        model.add(BatchNormalization())
-        model.add(Conv2D(filters[0], (3, 3), activation='relu', padding='same'))
+        model.add(Conv2D(filters[0], (3, 3), activation='relu', input_shape=self.input_shape, padding='same',
+                        kernel_regularizer=tf.keras.regularizers.l2(0.01)))
         model.add(BatchNormalization())
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(dropout_rate))
 
         # Segundo bloque convolucional
-        model.add(Conv2D(filters[1], (3, 3), activation='relu', padding='same'))
-        model.add(BatchNormalization())
-        model.add(Conv2D(filters[1], (3, 3), activation='relu', padding='same'))
+        model.add(Conv2D(filters[1], (3, 3), activation='relu', padding='same',
+                        kernel_regularizer=tf.keras.regularizers.l2(0.01)))
         model.add(BatchNormalization())
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(dropout_rate))
 
         # Tercer bloque convolucional
-        model.add(Conv2D(filters[2], (3, 3), activation='relu', padding='same'))
-        model.add(BatchNormalization())
-        model.add(Conv2D(filters[2], (3, 3), activation='relu', padding='same'))
+        model.add(Conv2D(filters[2], (3, 3), activation='relu', padding='same',
+                        kernel_regularizer=tf.keras.regularizers.l2(0.01)))
         model.add(BatchNormalization())
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(dropout_rate))
 
-        # Capas densas
-        model.add(Flatten())
-        model.add(Dense(512, activation='relu'))
-        model.add(BatchNormalization())
-        model.add(Dropout(0.5))
+        # Global Average Pooling
+        model.add(tf.keras.layers.GlobalAveragePooling2D())
         model.add(Dense(self.num_classes, activation='softmax'))
 
         return model
@@ -212,14 +206,14 @@ class EmotionClassifier:
         else:
             datagen = ImageDataGenerator()
 
-        # Callbacks por defecto - optimizados para reconocimiento de emociones
+        # Callbacks por defecto - ajustados para formas geométricas simples
         default_callbacks = [
             EarlyStopping(
                 monitor='val_accuracy',
-                patience=15,  # Paciencia razonable para emociones
+                patience=200,  # Muy paciente para formas simples
                 restore_best_weights=True,
                 verbose=1,
-                min_delta=0.005  # Mejora mínima requerida
+                min_delta=0.01  # Más permisivo para aprendizaje rápido
             ),
             ModelCheckpoint(
                 model_save_path,
@@ -230,8 +224,8 @@ class EmotionClassifier:
             ReduceLROnPlateau(
                 monitor='val_accuracy',
                 factor=0.5,
-                patience=8,  # Reducir LR más frecuentemente
-                min_lr=1e-6,
+                patience=20,  # Mucha paciencia antes de reducir LR
+                min_lr=1e-5,
                 verbose=1
             )
         ]

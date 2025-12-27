@@ -86,39 +86,33 @@ class EmotionClassifier:
 
         return model
 
-    def _create_advanced_model(self, filters=[64, 128, 256], dropout_rate=0.4, learning_rate=1e-4):
-        """Crear modelo avanzado CNN para emociones con Batch Normalization"""
+    def _create_advanced_model(self, filters=[32, 64, 128], dropout_rate=0.3, learning_rate=1e-4):
+        """Crear modelo avanzado CNN para emociones con Batch Normalization y regularización"""
         model = Sequential()
 
         # Primer bloque convolucional
-        model.add(Conv2D(filters[0], (3, 3), activation='relu', input_shape=self.input_shape, padding='same'))
-        model.add(BatchNormalization())
-        model.add(Conv2D(filters[0], (3, 3), activation='relu', padding='same'))
+        model.add(Conv2D(filters[0], (3, 3), activation='relu', input_shape=self.input_shape, padding='same',
+                        kernel_regularizer=tf.keras.regularizers.l2(0.01)))
         model.add(BatchNormalization())
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(dropout_rate))
 
         # Segundo bloque convolucional
-        model.add(Conv2D(filters[1], (3, 3), activation='relu', padding='same'))
-        model.add(BatchNormalization())
-        model.add(Conv2D(filters[1], (3, 3), activation='relu', padding='same'))
+        model.add(Conv2D(filters[1], (3, 3), activation='relu', padding='same',
+                        kernel_regularizer=tf.keras.regularizers.l2(0.01)))
         model.add(BatchNormalization())
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(dropout_rate))
 
         # Tercer bloque convolucional
-        model.add(Conv2D(filters[2], (3, 3), activation='relu', padding='same'))
-        model.add(BatchNormalization())
-        model.add(Conv2D(filters[2], (3, 3), activation='relu', padding='same'))
+        model.add(Conv2D(filters[2], (3, 3), activation='relu', padding='same',
+                        kernel_regularizer=tf.keras.regularizers.l2(0.01)))
         model.add(BatchNormalization())
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Dropout(dropout_rate))
 
-        # Capas densas
-        model.add(Flatten())
-        model.add(Dense(512, activation='relu'))
-        model.add(BatchNormalization())
-        model.add(Dropout(0.5))
+        # Global Average Pooling
+        model.add(tf.keras.layers.GlobalAveragePooling2D())
         model.add(Dense(self.num_classes, activation='softmax'))
 
         return model
