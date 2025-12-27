@@ -267,75 +267,68 @@ class EmotionDataLoader:
                     # Create highly distinct patterns for each emotion
                     img = np.full((48, 48), 128, dtype=np.uint8)  # Neutral gray base
 
-                    if emotion_idx == 0:  # Angry - Triangle pointing up (anger)
-                        # Draw upward triangle
-                        for y in range(24):
-                            start_x = 24 - y
-                            end_x = 24 + y
-                            if start_x < 0: start_x = 0
-                            if end_x > 47: end_x = 47
-                            img[y, start_x:end_x+1] = 30
+                    if emotion_idx == 0:  # Angry - X pattern across entire face
+                        # Draw X pattern
+                        for i in range(48):
+                            img[i, i] = 50  # Main diagonal
+                            img[i, 47-i] = 50  # Anti-diagonal
+                        # Add angry lines under eyes
+                        img[18:22, 8:18] = 70  # Left under eye
+                        img[18:22, 30:40] = 70  # Right under eye
 
-                    elif emotion_idx == 1:  # Disgust - Horizontal zigzag
-                        # Create horizontal zigzag pattern
-                        for y in range(0, 48, 8):
+                    elif emotion_idx == 1:  # Disgust - Wavy horizontal lines
+                        # Create wavy pattern
+                        for y in range(0, 48, 3):
                             for x in range(48):
-                                if (x // 4) % 2 == (y // 8) % 2:
-                                    img[y:y+4, x] = 45
+                                wave = int(2 * np.sin(x * 0.2) + y)
+                                if 0 <= wave < 48:
+                                    img[wave, x] = 60
 
-                    elif emotion_idx == 2:  # Fear - Diamond pattern
-                        # Draw diamond shape
-                        center_y, center_x = 24, 24
-                        for y in range(48):
-                            for x in range(48):
-                                dist_from_center = abs(y - center_y) + abs(x - center_x)
-                                if dist_from_center <= 16 and dist_from_center % 4 == 0:
-                                    img[y, x] = 35
-
-                    elif emotion_idx == 3:  # Happy - Vertical waves
-                        # Create vertical wave pattern
+                    elif emotion_idx == 2:  # Fear - Vertical stripes with gaps
+                        # Vertical stripes with fear gaps
                         for x in range(0, 48, 6):
-                            for y in range(48):
-                                wave_offset = int(3 * np.sin(y * 0.15))
-                                wave_x = x + wave_offset
-                                if 0 <= wave_x < 48:
-                                    img[y, wave_x] = 220
+                            if x < 20 or x > 28:  # Skip mouth area
+                                img[:, x:x+3] = 40
 
-                    elif emotion_idx == 4:  # Sad - Downward arrows
-                        # Draw downward pointing arrows
-                        for arrow_x in range(8, 41, 8):
-                            # Arrow shaft
-                            img[10:35, arrow_x-1:arrow_x+2] = 25
-                            # Arrow head (pointing down)
-                            for offset in range(6):
-                                y_pos = 35 + offset
-                                x_start = arrow_x - (5 - offset)
-                                x_end = arrow_x + (6 - offset)
-                                if 0 <= y_pos < 48 and x_start >= 0 and x_end <= 47:
-                                    img[y_pos, x_start:x_end] = 25
+                    elif emotion_idx == 3:  # Happy - Rainbow arc pattern
+                        # Create rainbow-like arc
+                        for x in range(48):
+                            y = int(15 + 10 * np.sin(x * np.pi / 24))
+                            if 0 <= y < 48:
+                                # Color gradient effect
+                                color = 200 + int(50 * np.sin(x * np.pi / 24))
+                                img[y, x] = min(255, max(0, color))
 
-                    elif emotion_idx == 5:  # Surprise - Five-pointed star
-                        # Draw star pattern
+                    elif emotion_idx == 4:  # Sad - Inverted U shape
+                        # Create inverted U (sad mouth)
+                        for x in range(10, 38):
+                            if x < 18 or x > 30:  # Sides go up
+                                y = 25 - int(8 * np.sin((x - 10) * np.pi / 28))
+                            else:  # Middle goes down
+                                y = 35 + int(5 * np.sin((x - 18) * np.pi / 12))
+                            if 0 <= y < 48:
+                                img[y, x] = 90
+
+                    elif emotion_idx == 5:  # Surprise - Concentric circles
+                        # Multiple concentric circles
+                        centers = [(24, 24), (24, 24), (24, 24)]
+                        radii = [8, 12, 16]
+                        for center, radius in zip(centers, radii):
+                            cy, cx = center
+                            for y in range(max(0, cy-radius), min(48, cy+radius+1)):
+                                for x in range(max(0, cx-radius), min(48, cx+radius+1)):
+                                    if (y - cy)**2 + (x - cx)**2 <= radius**2:
+                                        img[y, x] = 230
+
+                    elif emotion_idx == 6:  # Neutral - Plus sign pattern
+                        # Draw plus sign
                         center_y, center_x = 24, 24
-                        for angle in range(0, 360, 72):  # 5 points
-                            rad_angle = np.radians(angle)
-                            # Outer point
-                            outer_y = int(center_y + 15 * np.sin(rad_angle))
-                            outer_x = int(center_x + 15 * np.cos(rad_angle))
-                            if 0 <= outer_y < 48 and 0 <= outer_x < 48:
-                                img[outer_y, outer_x] = 240
-                            # Inner point
-                            inner_y = int(center_y + 6 * np.sin(rad_angle + np.pi/5))
-                            inner_x = int(center_x + 6 * np.cos(rad_angle + np.pi/5))
-                            if 0 <= inner_y < 48 and 0 <= inner_x < 48:
-                                img[inner_y, inner_x] = 240
-
-                    elif emotion_idx == 6:  # Neutral - Checkerboard
-                        # Create checkerboard pattern
-                        for y in range(0, 48, 6):
-                            for x in range(0, 48, 6):
-                                if (x//6 + y//6) % 2 == 0:
-                                    img[y:y+6, x:x+6] = 160
+                        # Horizontal line
+                        img[center_y-1:center_y+2, 10:38] = 150
+                        # Vertical line
+                        img[15:33, center_x-1:center_x+2] = 150
+                        # Small dots at ends
+                        img[15, 10] = img[15, 37] = img[32, 10] = img[32, 37] = 140
 
                     # Ensure final image is valid uint8
                     img = np.clip(img, 0, 255).astype(np.uint8)
