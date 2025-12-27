@@ -1100,9 +1100,9 @@ def show_emotion_content():
             show_emotion_predictions_section(selected_dataset)
 
 # Función para mostrar sección de dataset de emociones
-def show_emotion_dataset_section(data_loader, data, dataset_name):
-    """Muestra la sección de exploración del dataset de emociones"""
-    st.header(f"📊 Exploración del Dataset {dataset_name}")
+def show_emotion_dataset_section(data_loader, data):
+    """Muestra la sección de exploración del dataset FER2013"""
+    st.header("📊 Exploración del Dataset FER2013")
 
     if data_loader is not None and data is not None:
         col1, col2 = st.columns(2)
@@ -1180,9 +1180,9 @@ def show_emotion_dataset_section(data_loader, data, dataset_name):
                 st.error(f"Error generando muestras de predicciones: {e}")
 
         st.markdown("---")
-        st.markdown(f"### 🖼️ Muestras del Dataset {dataset_name}")
+        st.markdown("### 🖼️ Muestras del Dataset FER2013")
 
-        if st.button(f"🔄 Generar Nuevas Muestras - {dataset_name}"):
+        if st.button("🔄 Generar Nuevas Muestras - FER2013"):
             st.rerun()
 
         # Mostrar muestras aleatorias
@@ -1208,7 +1208,7 @@ def show_emotion_dataset_section(data_loader, data, dataset_name):
                 st.image(pil_image, caption=f"{emoji} {label}", width=100)
 
     else:
-        st.error(f"No se pudieron cargar los datos del dataset {dataset_name}.")
+        st.error("No se pudieron cargar los datos del dataset FER2013.")
 
 # Función para mostrar sección de modelo de emociones
 def show_emotion_model_section():
@@ -1256,9 +1256,9 @@ def show_emotion_model_section():
             st.error(f"Error al crear modelo: {e}")
 
 # Función para mostrar sección de entrenamiento de emociones
-def show_emotion_training_section(selected_dataset):
+def show_emotion_training_section():
     """Muestra la sección de entrenamiento del modelo de emociones"""
-    st.header(f"🚀 Entrenamiento del Modelo - {selected_dataset}")
+    st.header("🚀 Entrenamiento del Modelo - FER2013")
 
     col1, col2 = st.columns([1, 2])
 
@@ -1266,21 +1266,21 @@ def show_emotion_training_section(selected_dataset):
         st.markdown("### 🎯 Configuración de Entrenamiento")
 
         model_type = st.selectbox("Tipo de Modelo", ["basic", "advanced", "residual"],
-                                key=f"train_model_select_{selected_dataset.lower()}")
-        epochs = st.slider("Épocas", 5, 50, 10, key=f"train_epochs_{selected_dataset.lower()}")
-        batch_size = st.slider("Batch Size", 16, 128, 64, key=f"train_batch_{selected_dataset.lower()}")
+                                key="train_model_select_fer2013")
+        epochs = st.slider("Épocas", 5, 50, 10, key="train_epochs_fer2013")
+        batch_size = st.slider("Batch Size", 16, 128, 64, key="train_batch_fer2013")
 
-        train_button_key = f"train_{selected_dataset.lower()}_btn"
-        if st.button(f"🚀 Iniciar Entrenamiento {selected_dataset}", type="primary", key=train_button_key):
-            st.session_state[f'{selected_dataset.lower()}_training_started'] = True
+        train_button_key = "train_fer2013_btn"
+        if st.button("🚀 Iniciar Entrenamiento FER2013", type="primary", key=train_button_key):
+            st.session_state['fer2013_training_started'] = True
             # Store training parameters in session state with different keys
-            st.session_state[f'{selected_dataset.lower()}_training_model_type'] = model_type
-            st.session_state[f'{selected_dataset.lower()}_training_epochs'] = epochs
-            st.session_state[f'{selected_dataset.lower()}_training_batch_size'] = batch_size
+            st.session_state['fer2013_training_model_type'] = model_type
+            st.session_state['fer2013_training_epochs'] = epochs
+            st.session_state['fer2013_training_batch_size'] = batch_size
             st.rerun()
 
     with col2:
-        training_key = f'{selected_dataset.lower()}_training_started'
+        training_key = 'fer2013_training_started'
         if training_key in st.session_state and st.session_state[training_key]:
             st.markdown("### 📈 Progreso del Entrenamiento")
 
@@ -1302,28 +1302,27 @@ def show_emotion_training_section(selected_dataset):
 
                     # Fase 2: Construcción del modelo
                     status_text.markdown("**🏗️ Fase 2/5: Construcción del Modelo**")
-                    model_type = st.session_state[f'{selected_dataset.lower()}_training_model_type']
+                    model_type = st.session_state['fer2013_training_model_type']
 
                     # Mostrar arquitectura del modelo que se va a construir
-                    dataset_name = "FER2013" if selected_dataset == "FER2013" else "ExpW"
                     if model_type == "basic":
-                        layer_info.markdown(f"""
-                        **Construyendo Modelo Básico {dataset_name}:**
+                        layer_info.markdown("""
+                        **Construyendo Modelo Básico FER2013:**
                         - Capa Conv2D (32 filtros, 3x3) + ReLU + MaxPooling
                         - Capa Conv2D (64 filtros, 3x3) + ReLU + MaxPooling
                         - Flatten + Dense(128) + Dropout(25%) + Dense(7)
                         """)
                     elif model_type == "advanced":
-                        layer_info.markdown(f"""
-                        **Construyendo Modelo Avanzado {dataset_name}:**
+                        layer_info.markdown("""
+                        **Construyendo Modelo Avanzado FER2013:**
                         - Capa Conv2D (32 filtros) + BatchNorm + ReLU + MaxPooling
                         - Capa Conv2D (64 filtros) + BatchNorm + ReLU + MaxPooling
                         - Capa Conv2D (128 filtros) + BatchNorm + ReLU + MaxPooling
                         - GlobalAveragePooling + Dense(7)
                         """)
                     else:  # residual
-                        layer_info.markdown(f"""
-                        **Construyendo Modelo Residual {dataset_name}:**
+                        layer_info.markdown("""
+                        **Construyendo Modelo Residual FER2013:**
                         - Bloque Residual 1: Conv2D + BatchNorm + ReLU + Conv2D + Skip Connection
                         - Bloque Residual 2: Conv2D + BatchNorm + ReLU + Conv2D + Skip Connection
                         - GlobalAveragePooling + Dense(7)
@@ -1344,11 +1343,11 @@ def show_emotion_training_section(selected_dataset):
                     detail_text.text("Preparando generadores de datos y callbacks...")
 
                     # Obtener datos desde session state
-                    data_loader = st.session_state[f"{selected_dataset.lower()}_data_loader"]
-                    data = st.session_state[f"{selected_dataset.lower()}_data"]
+                    data_loader = st.session_state["fer2013_data_loader"]
+                    data = st.session_state["fer2013_data"]
 
-                    epochs = st.session_state[f'{selected_dataset.lower()}_training_epochs']
-                    batch_size = st.session_state[f'{selected_dataset.lower()}_training_batch_size']
+                    epochs = st.session_state['fer2013_training_epochs']
+                    batch_size = st.session_state['fer2013_training_batch_size']
 
                     # Calcular pesos de clase para datos desbalanceados
                     class_weights = data_loader.get_class_weights()
@@ -1372,7 +1371,7 @@ def show_emotion_training_section(selected_dataset):
                     status_text.markdown("**🚀 Fase 4/5: Entrenamiento del Modelo**")
 
                     dataset_dir_name = "emotion"
-                    save_path = os.path.join("models", dataset_dir_name, f"{model_type}_{selected_dataset.lower()}_trained.keras")
+                    save_path = os.path.join("models", dataset_dir_name, f"{model_type}_trained.keras")
 
                     # Entrenar con progreso detallado
                     detail_text.text("Iniciando entrenamiento con data augmentation...")
@@ -1443,7 +1442,7 @@ def show_emotion_training_section(selected_dataset):
                     time.sleep(1)  # Pequeña pausa para mostrar el mensaje final
 
                     # Mostrar resultados
-                    st.success(f"Modelo {model_type} para {selected_dataset} entrenado exitosamente!")
+                    st.success(f"Modelo {model_type} para FER2013 entrenado exitosamente!")
 
                     # Métricas finales
                     final_acc = history.history['val_accuracy'][-1]
@@ -1491,16 +1490,16 @@ def show_emotion_training_section(selected_dataset):
             st.info("Configura los parámetros y haz clic en 'Iniciar Entrenamiento'")
 
 # Función para mostrar sección de evaluación de emociones
-def show_emotion_evaluation_section(data_loader, data, selected_dataset):
+def show_emotion_evaluation_section(data_loader, data):
     """Muestra la sección de evaluación del modelo de emociones"""
-    st.header(f"📊 Evaluación del Modelo - {selected_dataset}")
+    st.header("📊 Evaluación del Modelo - FER2013")
 
     # Seleccionar tipo de modelo para evaluación
     model_options = ["basic", "advanced", "residual"]
     selected_model_type = st.selectbox(
         "Selecciona el tipo de modelo para evaluar:",
         model_options,
-        key=f"eval_model_type_{selected_dataset.lower()}"
+        key="eval_model_type_fer2013"
     )
 
     # Explicación de las diferencias entre modelos
@@ -1540,30 +1539,23 @@ def show_emotion_evaluation_section(data_loader, data, selected_dataset):
     model_path = None
 
     if os.path.exists(dataset_models_dir):
-        # Buscar modelo entrenado del tipo seleccionado con nombre del dataset
-        trained_model = f"{selected_model_type}_{selected_dataset.lower()}_trained.keras"
+        # Buscar modelo entrenado del tipo seleccionado
+        trained_model = f"{selected_model_type}_trained.keras"
         trained_path = os.path.join(dataset_models_dir, trained_model)
 
         if os.path.exists(trained_path):
             model_path = trained_path
         else:
-            # Fallback a modelo entrenado sin especificar dataset
-            fallback_trained = f"{selected_model_type}_trained.keras"
-            fallback_path = os.path.join(dataset_models_dir, fallback_trained)
+            # Fallback a modelo pre-entrenado
+            fallback_model = f"{selected_model_type}_model.keras"
+            fallback_path = os.path.join(dataset_models_dir, fallback_model)
             if os.path.exists(fallback_path):
                 model_path = fallback_path
-                st.warning(f"No se encontró modelo {selected_model_type} entrenado para {selected_dataset}. Usando modelo general.")
+                st.warning(f"No se encontró modelo {selected_model_type} entrenado. Usando modelo pre-entrenado.")
             else:
-                # Último fallback a modelo básico
-                basic_model = "emotion_model.h5"
-                basic_path = os.path.join(dataset_models_dir, basic_model)
-                if os.path.exists(basic_path):
-                    model_path = basic_path
-                    st.warning(f"No se encontró modelo {selected_model_type} entrenado. Usando modelo básico.")
-                else:
-                    st.error(f"No se encontró ningún modelo para {selected_dataset}.")
+                st.error(f"No se encontró modelo {selected_model_type} para FER2013.")
     else:
-        st.error("Directorio de modelos para emociones no encontrado.")
+        st.error("Directorio de modelos para FER2013 no encontrado.")
 
     if model_path is not None and os.path.exists(model_path):
         try:
@@ -1655,9 +1647,9 @@ def show_emotion_evaluation_section(data_loader, data, selected_dataset):
         st.warning("No se encontró un modelo entrenado. Entrena un modelo primero en la sección 'Entrenamiento'.")
 
 # Función para mostrar sección de predicciones de emociones
-def show_emotion_predictions_section(selected_dataset):
+def show_emotion_predictions_section():
     """Muestra la sección de predicciones de emociones"""
-    st.header(f"🔮 Predicciones de Emociones - {selected_dataset}")
+    st.header("🔮 Predicciones de Emociones")
 
     st.markdown("### 📸 Subir Imagen Facial o Usar Cámara")
 
@@ -1665,7 +1657,7 @@ def show_emotion_predictions_section(selected_dataset):
     input_option = st.radio(
         "Método de entrada:",
         ["Subir imagen", "Usar cámara"],
-        key=f"input_option_{selected_dataset.lower()}"
+        key="input_option"
     )
 
     uploaded_file = None
@@ -1675,12 +1667,12 @@ def show_emotion_predictions_section(selected_dataset):
         uploaded_file = st.file_uploader(
             "Elige una imagen facial",
             type=["jpg", "jpeg", "png"],
-            key=f"emotion_uploader_{selected_dataset.lower()}"
+            key="emotion_uploader"
         )
     else:  # Usar cámara
         camera_image = st.camera_input(
             "Captura una imagen facial",
-            key=f"emotion_camera_{selected_dataset.lower()}"
+            key="emotion_camera"
         )
 
     if uploaded_file is not None:
@@ -1706,7 +1698,7 @@ def show_emotion_predictions_section(selected_dataset):
             selected_emotion_model = st.selectbox(
                 "Selecciona el tipo de modelo:",
                 emotion_model_options,
-                key=f"emotion_model_select_{selected_dataset.lower()}"
+                key="emotion_model_select"
             )
 
             try:
@@ -1715,26 +1707,19 @@ def show_emotion_predictions_section(selected_dataset):
                 model_path = None
 
                 if os.path.exists(dataset_models_dir):
-                    # Try trained model first with dataset name
-                    trained_model = f"{selected_emotion_model}_{selected_dataset.lower()}_trained.keras"
+                    # Try trained model first
+                    trained_model = f"{selected_emotion_model}_trained.keras"
                     trained_path = os.path.join(dataset_models_dir, trained_model)
 
                     if os.path.exists(trained_path):
                         model_path = trained_path
                     else:
-                        # Fallback to trained model without dataset name
-                        fallback_trained = f"{selected_emotion_model}_trained.keras"
-                        fallback_path = os.path.join(dataset_models_dir, fallback_trained)
-                        if os.path.exists(fallback_path):
-                            model_path = fallback_path
-                            st.info(f"No se encontró modelo {selected_emotion_model} entrenado para {selected_dataset}. Usando modelo general.")
-                        else:
-                            # Last fallback to basic model
-                            basic_model = "emotion_model.h5"
-                            basic_path = os.path.join(dataset_models_dir, basic_model)
-                            if os.path.exists(basic_path):
-                                model_path = basic_path
-                                st.info(f"No se encontró modelo {selected_emotion_model} entrenado. Usando modelo básico.")
+                        # Fallback to basic model
+                        basic_model = "emotion_model.h5"
+                        basic_path = os.path.join(dataset_models_dir, basic_model)
+                        if os.path.exists(basic_path):
+                            model_path = basic_path
+                            st.info(f"Usando modelo básico. Para usar {selected_emotion_model}, entrena el modelo primero.")
 
                 if model_path:
                     classifier = EmotionClassifier(model_path=model_path)
@@ -1765,7 +1750,7 @@ def show_emotion_predictions_section(selected_dataset):
                     prob_df = pd.DataFrame(prob_rows)
                     st.dataframe(prob_df, use_container_width=True)
                 else:
-                    st.error(f"No se encontró un modelo de emociones entrenado para {selected_dataset}.")
+                    st.error("No se encontró un modelo de emociones entrenado.")
 
             except Exception as e:
                 st.error(f"Error en predicción: {str(e)}")

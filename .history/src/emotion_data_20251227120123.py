@@ -221,27 +221,9 @@ class EmotionDataLoader:
             print("   ├── WIDER_train/images/")
             print("   ├── WIDER_val/images/")
             print("   └── label.lst")
-            print("\n🔄 Cambiando a FER2013 como alternativa...")
-
-            # Fallback to FER2013 - need to reload FER2013 data
-            fer2013_path = os.path.join(os.path.dirname(self.data_path), '..', 'fer2013.csv')
-            fer2013_path = os.path.abspath(fer2013_path)
-
-            if os.path.exists(fer2013_path):
-                # Temporarily change dataset and data
-                original_dataset = self.dataset
-                self.dataset = 'fer2013'
-                self.data_path = fer2013_path
-                self.data = pd.read_csv(fer2013_path)
-                print(f"FER2013 dataset cargado como alternativa: {len(self.data)} muestras")
-
-                result = self._preprocess_fer2013(test_size, validation_split, max_samples)
-
-                # Restore original settings
-                self.dataset = original_dataset
-                return result
-            else:
-                raise ValueError("No se puede hacer fallback a FER2013 - archivo no encontrado")
+            print("\n🔄 Usando FER2013 como alternativa...")
+            # Fallback to FER2013
+            return self._preprocess_fer2013(test_size, validation_split, max_samples)
 
         if missing_images > 0:
             print(f"⚠️  {missing_images} imágenes no encontradas, {processed_count} procesadas correctamente")

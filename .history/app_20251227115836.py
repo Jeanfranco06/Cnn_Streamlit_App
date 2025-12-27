@@ -1540,30 +1540,23 @@ def show_emotion_evaluation_section(data_loader, data, selected_dataset):
     model_path = None
 
     if os.path.exists(dataset_models_dir):
-        # Buscar modelo entrenado del tipo seleccionado con nombre del dataset
-        trained_model = f"{selected_model_type}_{selected_dataset.lower()}_trained.keras"
+        # Buscar modelo entrenado del tipo seleccionado
+        trained_model = f"{selected_model_type}_trained.keras"
         trained_path = os.path.join(dataset_models_dir, trained_model)
 
         if os.path.exists(trained_path):
             model_path = trained_path
         else:
-            # Fallback a modelo entrenado sin especificar dataset
-            fallback_trained = f"{selected_model_type}_trained.keras"
-            fallback_path = os.path.join(dataset_models_dir, fallback_trained)
+            # Fallback a modelo pre-entrenado
+            fallback_model = f"{selected_model_type}_model.keras"
+            fallback_path = os.path.join(dataset_models_dir, fallback_model)
             if os.path.exists(fallback_path):
                 model_path = fallback_path
-                st.warning(f"No se encontró modelo {selected_model_type} entrenado para {selected_dataset}. Usando modelo general.")
+                st.warning(f"No se encontró modelo {selected_model_type} entrenado. Usando modelo pre-entrenado.")
             else:
-                # Último fallback a modelo básico
-                basic_model = "emotion_model.h5"
-                basic_path = os.path.join(dataset_models_dir, basic_model)
-                if os.path.exists(basic_path):
-                    model_path = basic_path
-                    st.warning(f"No se encontró modelo {selected_model_type} entrenado. Usando modelo básico.")
-                else:
-                    st.error(f"No se encontró ningún modelo para {selected_dataset}.")
+                st.error(f"No se encontró modelo {selected_model_type} para FER2013.")
     else:
-        st.error("Directorio de modelos para emociones no encontrado.")
+        st.error("Directorio de modelos para FER2013 no encontrado.")
 
     if model_path is not None and os.path.exists(model_path):
         try:
@@ -1655,9 +1648,9 @@ def show_emotion_evaluation_section(data_loader, data, selected_dataset):
         st.warning("No se encontró un modelo entrenado. Entrena un modelo primero en la sección 'Entrenamiento'.")
 
 # Función para mostrar sección de predicciones de emociones
-def show_emotion_predictions_section(selected_dataset):
+def show_emotion_predictions_section():
     """Muestra la sección de predicciones de emociones"""
-    st.header(f"🔮 Predicciones de Emociones - {selected_dataset}")
+    st.header("🔮 Predicciones de Emociones")
 
     st.markdown("### 📸 Subir Imagen Facial o Usar Cámara")
 
@@ -1665,7 +1658,7 @@ def show_emotion_predictions_section(selected_dataset):
     input_option = st.radio(
         "Método de entrada:",
         ["Subir imagen", "Usar cámara"],
-        key=f"input_option_{selected_dataset.lower()}"
+        key="input_option"
     )
 
     uploaded_file = None
@@ -1675,12 +1668,12 @@ def show_emotion_predictions_section(selected_dataset):
         uploaded_file = st.file_uploader(
             "Elige una imagen facial",
             type=["jpg", "jpeg", "png"],
-            key=f"emotion_uploader_{selected_dataset.lower()}"
+            key="emotion_uploader"
         )
     else:  # Usar cámara
         camera_image = st.camera_input(
             "Captura una imagen facial",
-            key=f"emotion_camera_{selected_dataset.lower()}"
+            key="emotion_camera"
         )
 
     if uploaded_file is not None:
@@ -1706,7 +1699,7 @@ def show_emotion_predictions_section(selected_dataset):
             selected_emotion_model = st.selectbox(
                 "Selecciona el tipo de modelo:",
                 emotion_model_options,
-                key=f"emotion_model_select_{selected_dataset.lower()}"
+                key="emotion_model_select"
             )
 
             try:
@@ -1715,26 +1708,19 @@ def show_emotion_predictions_section(selected_dataset):
                 model_path = None
 
                 if os.path.exists(dataset_models_dir):
-                    # Try trained model first with dataset name
-                    trained_model = f"{selected_emotion_model}_{selected_dataset.lower()}_trained.keras"
+                    # Try trained model first
+                    trained_model = f"{selected_emotion_model}_trained.keras"
                     trained_path = os.path.join(dataset_models_dir, trained_model)
 
                     if os.path.exists(trained_path):
                         model_path = trained_path
                     else:
-                        # Fallback to trained model without dataset name
-                        fallback_trained = f"{selected_emotion_model}_trained.keras"
-                        fallback_path = os.path.join(dataset_models_dir, fallback_trained)
-                        if os.path.exists(fallback_path):
-                            model_path = fallback_path
-                            st.info(f"No se encontró modelo {selected_emotion_model} entrenado para {selected_dataset}. Usando modelo general.")
-                        else:
-                            # Last fallback to basic model
-                            basic_model = "emotion_model.h5"
-                            basic_path = os.path.join(dataset_models_dir, basic_model)
-                            if os.path.exists(basic_path):
-                                model_path = basic_path
-                                st.info(f"No se encontró modelo {selected_emotion_model} entrenado. Usando modelo básico.")
+                        # Fallback to basic model
+                        basic_model = "emotion_model.h5"
+                        basic_path = os.path.join(dataset_models_dir, basic_model)
+                        if os.path.exists(basic_path):
+                            model_path = basic_path
+                            st.info(f"Usando modelo básico. Para usar {selected_emotion_model}, entrena el modelo primero.")
 
                 if model_path:
                     classifier = EmotionClassifier(model_path=model_path)
@@ -1765,7 +1751,7 @@ def show_emotion_predictions_section(selected_dataset):
                     prob_df = pd.DataFrame(prob_rows)
                     st.dataframe(prob_df, use_container_width=True)
                 else:
-                    st.error(f"No se encontró un modelo de emociones entrenado para {selected_dataset}.")
+                    st.error("No se encontró un modelo de emociones entrenado.")
 
             except Exception as e:
                 st.error(f"Error en predicción: {str(e)}")

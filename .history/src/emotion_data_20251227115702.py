@@ -155,8 +155,6 @@ class EmotionDataLoader:
 
         X = []
         labels = []
-        processed_count = 0
-        missing_images = 0
 
         # Procesar cada imagen
         for idx, row in self.data.iterrows():
@@ -167,11 +165,6 @@ class EmotionDataLoader:
                 # Cargar imagen
                 img_path = os.path.join(expw_base_dir, row['image_path'])
                 if not os.path.exists(img_path):
-                    missing_images += 1
-                    if missing_images <= 3:  # Solo mostrar primeros errores
-                        print(f"Imagen no encontrada: {img_path}")
-                    elif missing_images == 4:
-                        print("... (y más imágenes faltantes)")
                     continue
 
                 image = cv2.imread(img_path)
@@ -205,46 +198,13 @@ class EmotionDataLoader:
 
                 X.append(face_normalized)
                 labels.append(row['emotion'])
-                processed_count += 1
 
             except Exception as e:
                 print(f"Error procesando imagen {row['image_path']}: {e}")
                 continue
 
         if len(X) == 0:
-            print("❌ No se encontraron imágenes válidas en el dataset ExpW.")
-            print("💡 Para usar ExpW, descarga el dataset completo desde:")
-            print("   https://mmlab.ie.cuhk.edu.hk/projects/WIDERFace/")
-            print("   Extrae los archivos a data/expw/")
-            print("   Asegúrate de que la estructura sea:")
-            print("   data/expw/")
-            print("   ├── WIDER_train/images/")
-            print("   ├── WIDER_val/images/")
-            print("   └── label.lst")
-            print("\n🔄 Cambiando a FER2013 como alternativa...")
-
-            # Fallback to FER2013 - need to reload FER2013 data
-            fer2013_path = os.path.join(os.path.dirname(self.data_path), '..', 'fer2013.csv')
-            fer2013_path = os.path.abspath(fer2013_path)
-
-            if os.path.exists(fer2013_path):
-                # Temporarily change dataset and data
-                original_dataset = self.dataset
-                self.dataset = 'fer2013'
-                self.data_path = fer2013_path
-                self.data = pd.read_csv(fer2013_path)
-                print(f"FER2013 dataset cargado como alternativa: {len(self.data)} muestras")
-
-                result = self._preprocess_fer2013(test_size, validation_split, max_samples)
-
-                # Restore original settings
-                self.dataset = original_dataset
-                return result
-            else:
-                raise ValueError("No se puede hacer fallback a FER2013 - archivo no encontrado")
-
-        if missing_images > 0:
-            print(f"⚠️  {missing_images} imágenes no encontradas, {processed_count} procesadas correctamente")
+            raise ValueError("No se pudieron cargar imágenes válidas del dataset ExpW")
 
         X = np.array(X)
         y = np.array(labels)

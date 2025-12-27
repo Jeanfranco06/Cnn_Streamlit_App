@@ -48,62 +48,23 @@ class EmotionDataLoader:
         self.y_test = None
 
     def load_data(self):
-        """Cargar conjunto de datos desde archivo"""
+        """Cargar conjunto de datos FER2013 desde archivo CSV"""
         if not os.path.exists(self.data_path):
             raise FileNotFoundError(f"Archivo de conjunto de datos no encontrado: {self.data_path}")
 
-        if self.dataset == 'fer2013':
-            self.data = pd.read_csv(self.data_path)
-            print(f"FER2013 dataset cargado: {len(self.data)} muestras")
-        elif self.dataset == 'expw':
-            self.data = self._load_expw_data()
-            print(f"ExpW dataset cargado: {len(self.data)} muestras")
+        self.data = pd.read_csv(self.data_path)
+        print(f"Conjunto de datos cargado: {len(self.data)} muestras")
 
         return self.data
 
-    def _load_expw_data(self):
-        """Cargar datos del dataset ExpW"""
-        # ExpW usa un archivo label.lst con formato específico
-        # Formato: #imagen etiqueta bbox_x bbox_y bbox_width bbox_height landmarks...
-        data = []
-        with open(self.data_path, 'r') as f:
-            for line in f:
-                if line.strip():
-                    parts = line.strip().split()
-                    if len(parts) >= 6:  # imagen, etiqueta, bbox coords
-                        image_path = parts[0]
-                        emotion_label = int(parts[1])
-                        bbox = [int(x) for x in parts[2:6]]  # x, y, width, height
-
-                        data.append({
-                            'image_path': image_path,
-                            'emotion': emotion_label,
-                            'bbox': bbox
-                        })
-
-        return pd.DataFrame(data)
-
-    def preprocess_data(self, test_size=0.2, validation_split=0.1, max_samples=None):
+    def preprocess_data(self, test_size=0.2, validation_split=0.1):
         """Preprocesar los datos para entrenamiento"""
         if self.data is None:
             self.load_data()
 
-        if self.dataset == 'fer2013':
-            return self._preprocess_fer2013(test_size, validation_split, max_samples)
-        elif self.dataset == 'expw':
-            return self._preprocess_expw(test_size, validation_split, max_samples)
-
-    def _preprocess_fer2013(self, test_size=0.2, validation_split=0.1, max_samples=None):
-        """Preprocesar datos FER2013"""
         # Extraer píxeles y etiquetas
         pixels = self.data['pixels'].tolist()
         labels = self.data['emotion'].tolist()
-
-        # Limitar muestras si se especifica
-        if max_samples and len(pixels) > max_samples:
-            indices = np.random.choice(len(pixels), max_samples, replace=False)
-            pixels = [pixels[i] for i in indices]
-            labels = [labels[i] for i in indices]
 
         # Convertir píxeles a arrays numpy
         X = []
@@ -132,137 +93,6 @@ class EmotionDataLoader:
             self.X_train, self.y_train, test_size=validation_split, random_state=42
         )
 
-        print(f"Muestras de entrenamiento: {len(self.X_train)}")
-        print(f"Muestras de validación: {len(self.X_val)}")
-        print(f"Muestras de prueba: {len(self.X_test)}")
-
-        return {
-            'X_train': self.X_train,
-            'y_train': self.y_train,
-            'X_val': self.X_val,
-            'y_val': self.y_val,
-            'X_test': self.X_test,
-            'y_test': self.y_test,
-            'class_names': self.emotion_labels
-        }
-
-    def _preprocess_expw(self, test_size=0.2, validation_split=0.1, max_samples=None):
-        """Preprocesar datos ExpW"""
-        print("Procesando imágenes ExpW...")
-
-        # Directorio base de imágenes ExpW
-        expw_base_dir = os.path.dirname(self.data_path)
-
-        X = []
-        labels = []
-        processed_count = 0
-        missing_images = 0
-
-        # Procesar cada imagen
-        for idx, row in self.data.iterrows():
-            if max_samples and idx >= max_samples:
-                break
-
-            try:
-                # Cargar imagen
-                img_path = os.path.join(expw_base_dir, row['image_path'])
-                if not os.path.exists(img_path):
-                    missing_images += 1
-                    if missing_images <= 3:  # Solo mostrar primeros errores
-                        print(f"Imagen no encontrada: {img_path}")
-                    elif missing_images == 4:
-                        print("... (y más imágenes faltantes)")
-                    continue
-
-                image = cv2.imread(img_path)
-                if image is None:
-                    continue
-
-                # Convertir a escala de grises
-                gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-                # Extraer cara usando bounding box
-                bbox = row['bbox']
-                x, y, w, h = bbox
-
-                # Asegurar que bbox esté dentro de la imagen
-                x = max(0, x)
-                y = max(0, y)
-                w = min(w, gray.shape[1] - x)
-                h = min(h, gray.shape[0] - y)
-
-                if w <= 0 or h <= 0:
-                    continue
-
-                face = gray[y:y+h, x:x+w]
-
-                # Redimensionar a 48x48
-                face_resized = cv2.resize(face, (48, 48))
-
-                # Normalizar
-                face_normalized = face_resized.astype('float32') / 255.0
-                face_normalized = np.expand_dims(face_normalized, axis=-1)
-
-                X.append(face_normalized)
-                labels.append(row['emotion'])
-                processed_count += 1
-
-            except Exception as e:
-                print(f"Error procesando imagen {row['image_path']}: {e}")
-                continue
-
-        if len(X) == 0:
-            print("❌ No se encontraron imágenes válidas en el dataset ExpW.")
-            print("💡 Para usar ExpW, descarga el dataset completo desde:")
-            print("   https://mmlab.ie.cuhk.edu.hk/projects/WIDERFace/")
-            print("   Extrae los archivos a data/expw/")
-            print("   Asegúrate de que la estructura sea:")
-            print("   data/expw/")
-            print("   ├── WIDER_train/images/")
-            print("   ├── WIDER_val/images/")
-            print("   └── label.lst")
-            print("\n🔄 Cambiando a FER2013 como alternativa...")
-
-            # Fallback to FER2013 - need to reload FER2013 data
-            fer2013_path = os.path.join(os.path.dirname(self.data_path), '..', 'fer2013.csv')
-            fer2013_path = os.path.abspath(fer2013_path)
-
-            if os.path.exists(fer2013_path):
-                # Temporarily change dataset and data
-                original_dataset = self.dataset
-                self.dataset = 'fer2013'
-                self.data_path = fer2013_path
-                self.data = pd.read_csv(fer2013_path)
-                print(f"FER2013 dataset cargado como alternativa: {len(self.data)} muestras")
-
-                result = self._preprocess_fer2013(test_size, validation_split, max_samples)
-
-                # Restore original settings
-                self.dataset = original_dataset
-                return result
-            else:
-                raise ValueError("No se puede hacer fallback a FER2013 - archivo no encontrado")
-
-        if missing_images > 0:
-            print(f"⚠️  {missing_images} imágenes no encontradas, {processed_count} procesadas correctamente")
-
-        X = np.array(X)
-        y = np.array(labels)
-
-        # Convertir etiquetas a categóricas
-        y = to_categorical(y, num_classes=len(self.emotions))
-
-        # Dividir en entrenamiento y prueba
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            X, y, test_size=test_size, random_state=42, stratify=labels
-        )
-
-        # Dividir aún más el entrenamiento en entrenamiento y validación
-        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
-            self.X_train, self.y_train, test_size=validation_split, random_state=42
-        )
-
-        print(f"ExpW - Muestras procesadas: {len(X)}")
         print(f"Muestras de entrenamiento: {len(self.X_train)}")
         print(f"Muestras de validación: {len(self.X_val)}")
         print(f"Muestras de prueba: {len(self.X_test)}")
