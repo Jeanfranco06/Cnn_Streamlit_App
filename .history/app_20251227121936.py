@@ -1188,7 +1188,7 @@ def show_emotion_dataset_section(data_loader, data, dataset_name):
                 img_array = (image.squeeze() * 255).astype(np.uint8)
                 pil_image = Image.fromarray(img_array, mode='L')
 
-                st.image(pil_image, caption=f"{emoji} {label}", width=100, use_container_width=False)
+                st.image(pil_image, caption=f"{emoji} {label}", width=100)
 
     else:
         st.error(f"No se pudieron cargar los datos del dataset {dataset_name}.")

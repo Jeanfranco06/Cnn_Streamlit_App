@@ -213,14 +213,13 @@ class EmotionClassifier:
         else:
             datagen = ImageDataGenerator()
 
-        # Callbacks por defecto - ajustados para datos sintéticos
+        # Callbacks por defecto
         default_callbacks = [
             EarlyStopping(
                 monitor='val_accuracy',
-                patience=50,  # Mucho más paciente para datos sintéticos
+                patience=15,
                 restore_best_weights=True,
-                verbose=1,
-                min_delta=0.001  # Solo parar si mejora menos de 0.1%
+                verbose=1
             ),
             ModelCheckpoint(
                 model_save_path,
@@ -231,8 +230,8 @@ class EmotionClassifier:
             ReduceLROnPlateau(
                 monitor='val_accuracy',
                 factor=0.5,
-                patience=10,  # Más paciencia antes de reducir LR
-                min_lr=1e-6,
+                patience=5,
+                min_lr=1e-7,
                 verbose=1
             )
         ]
@@ -300,71 +299,47 @@ class EmotionClassifier:
         if self.model is None:
             raise ValueError("Modelo no inicializado")
 
-        try:
-            # Preprocesar imagen
-            processed_image = self.preprocess_image(image)
+        # Preprocesar imagen
+        processed_image = self.preprocess_image(image)
 
-            # Hacer predicción
-            predictions = self.model.predict(processed_image, verbose=0)[0]
+        # Hacer predicción
+        predictions = self.model.predict(processed_image, verbose=0)[0]
 
-            # Obtener clase predicha y confianza
-            predicted_class = np.argmax(predictions)
-            confidence = predictions[predicted_class]
+        # Obtener clase predicha y confianza
+        predicted_class = np.argmax(predictions)
+        confidence = predictions[predicted_class]
 
-            # Obtener nombre de emoción
-            emotion = self.emotions[predicted_class]
+        # Obtener nombre de emoción
+        emotion = self.emotions[predicted_class]
 
-            # Crear diccionario de probabilidades
-            probabilities = {self.emotions[i]: float(predictions[i]) for i in range(len(self.emotions))}
+        # Crear diccionario de probabilidades
+        probabilities = {self.emotions[i]: float(predictions[i]) for i in range(len(self.emotions))}
 
-            return emotion, confidence, probabilities
-
-        except Exception as e:
-            print(f"Error en predicción: {e}")
-            # Fallback: devolver predicción por defecto
-            return "Neutral", 0.0, {emotion: 0.0 for emotion in self.emotions.values()}
+        return emotion, confidence, probabilities
 
     def preprocess_image(self, image):
         """Preprocesar imagen para predicción"""
-        try:
-            # Convertir imagen PIL a array numpy
-            if isinstance(image, Image.Image):
-                # Convertir a escala de grises si es necesario
-                if image.mode != 'L':
-                    image = image.convert('L')
-                image = np.array(image)
-            elif isinstance(image, np.ndarray):
-                # Si es RGB/BGR, convertir a escala de grises
-                if len(image.shape) == 3:
-                    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-                elif len(image.shape) == 2:
-                    # Ya está en escala de grises
-                    pass
-                else:
-                    raise ValueError(f"Formato de imagen no soportado: {image.shape}")
-            else:
-                raise ValueError(f"Tipo de imagen no soportado: {type(image)}")
+        # Convertir imagen PIL a array numpy
+        if isinstance(image, Image.Image):
+            # Convertir a escala de grises si es necesario
+            if image.mode != 'L':
+                image = image.convert('L')
+            image = np.array(image)
+        elif isinstance(image, np.ndarray):
+            # Si es RGB, convertir a escala de grises
+            if len(image.shape) == 3:
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
-            # Verificar que la imagen no esté vacía
-            if image.size == 0:
-                raise ValueError("Imagen vacía")
+        # Redimensionar a 48x48
+        image = cv2.resize(image, (48, 48))
 
-            # Redimensionar a 48x48
-            image = cv2.resize(image, (48, 48), interpolation=cv2.INTER_LINEAR)
+        # Normalizar
+        image = image.astype('float32') / 255.0
 
-            # Normalizar
-            image = image.astype('float32') / 255.0
+        # Agregar dimensiones de lote y canal
+        image = np.expand_dims(image, axis=[0, -1])
 
-            # Agregar dimensiones de lote y canal
-            image = np.expand_dims(image, axis=[0, -1])
-
-            return image
-
-        except Exception as e:
-            print(f"Error procesando imagen: {e}")
-            # Crear imagen dummy en caso de error
-            dummy_image = np.zeros((1, 48, 48, 1), dtype='float32')
-            return dummy_image
+        return image
 
     def get_model_metrics(self):
         """Obtener métricas de rendimiento del modelo"""
