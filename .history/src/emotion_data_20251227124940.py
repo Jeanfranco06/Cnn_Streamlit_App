@@ -255,60 +255,26 @@ class EmotionDataLoader:
             # Create a minimal test dataset with dummy images for demonstration
             print("📝 Creando dataset mínimo de prueba...")
 
-            # Create a simple but safe synthetic face dataset
+            # Create a highly realistic synthetic face dataset
             emotions = list(self.emotions.keys())
             X = []
             labels = []
 
-            samples_per_emotion = 50  # Reasonable number for testing
+            samples_per_emotion = 100  # Even more samples for better generalization
 
             for emotion_idx in emotions:
                 for i in range(samples_per_emotion):
-                    # Create simple but distinct patterns for each emotion
-                    img = np.full((48, 48), 128, dtype=np.uint8)  # Neutral gray base
+                    # Create base face structure - much more realistic
+                    img = self._generate_realistic_face_base()
 
-                    if emotion_idx == 0:  # Angry - diagonal lines
-                        for j in range(0, 48, 4):
-                            if j < 48:
-                                img[j:min(j+2, 48), :] = 100  # Horizontal stripes
+                    # Add emotion-specific modifications
+                    img = self._add_emotion_features(img, emotion_idx)
 
-                    elif emotion_idx == 1:  # Disgust - checkerboard
-                        img[::4, ::4] = 80
-                        img[1::4, 1::4] = 80
+                    # Add realistic facial texture and variations
+                    img = self._add_facial_texture(img)
 
-                    elif emotion_idx == 2:  # Fear - wide open areas
-                        img[10:20, 5:15] = 180  # Left eye area
-                        img[10:20, 33:43] = 180  # Right eye area
-                        img[25:35, 15:33] = 200  # Mouth area
-
-                    elif emotion_idx == 3:  # Happy - curved patterns
-                        # Simple upward curve for smile
-                        for x in range(18, 30):
-                            y = 25 + int(8 * np.sin((x - 18) * np.pi / 12))
-                            if 0 <= y < 48:
-                                img[y, x] = 200
-
-                    elif emotion_idx == 4:  # Sad - downward patterns
-                        # Simple downward curve for frown
-                        for x in range(18, 30):
-                            y = 30 - int(6 * np.sin((x - 18) * np.pi / 12))
-                            if 0 <= y < 48:
-                                img[y, x] = 80
-
-                    elif emotion_idx == 5:  # Surprise - circular patterns
-                        center_y, center_x = 32, 24
-                        for y in range(25, 40):
-                            for x in range(18, 30):
-                                if (y - center_y)**2 + (x - center_x)**2 <= 25:
-                                    img[y, x] = 220
-
-                    elif emotion_idx == 6:  # Neutral - balanced pattern
-                        img[12:18, 10:16] = 160  # Left eye
-                        img[12:18, 32:38] = 160  # Right eye
-                        img[28:32, 20:28] = 140  # Mouth
-
-                    # Ensure final image is valid uint8
-                    img = np.clip(img, 0, 255).astype(np.uint8)
+                    # Random lighting variations
+                    img = self._apply_lighting_variations(img)
 
                     # Normalize to [0, 1] and expand dimensions
                     img_normalized = img.astype('float32') / 255.0
@@ -349,10 +315,9 @@ class EmotionDataLoader:
 
     def _generate_realistic_face_base(self):
         """Generate a realistic base face structure"""
-        # Create base image with safe uint8 values
-        img = np.full((48, 48), 120, dtype=np.uint8)
+        img = np.full((48, 48), 120, dtype=np.uint8)  # Base skin tone
 
-        # Add oval face shape with safe calculations
+        # Add oval face shape
         y_center, x_center = 24, 24
         for y in range(48):
             for x in range(48):
@@ -360,33 +325,26 @@ class EmotionDataLoader:
                 dist = np.sqrt((y - y_center)**2 + (x - x_center)**2)
                 # Face boundary (oval shape)
                 if dist > 20:
-                    # Fade to background - ensure non-negative result
-                    fade_factor = max(0.0, min(1.0, 1 - (dist - 20) / 5))
-                    new_value = int(max(0, 120 * fade_factor + 80 * (1 - fade_factor)))
-                    img[y, x] = np.uint8(min(255, max(0, new_value)))
+                    # Fade to background
+                    fade_factor = max(0, 1 - (dist - 20) / 5)
+                    new_value = int(120 * fade_factor + 80 * (1 - fade_factor))
+                    img[y, x] = np.clip(new_value, 0, 255)
                 elif dist < 18:
                     # Face interior with slight variations
-                    random_val = np.random.randint(110, 140)
-                    img[y, x] = np.uint8(min(255, max(0, random_val)))
+                    img[y, x] = np.clip(np.random.randint(110, 140), 0, 255)
 
-        # Add forehead with safe random values
-        forehead_vals = np.random.randint(130, 150, (10, 24))
-        img[2:12, 12:36] = np.uint8(np.clip(forehead_vals, 0, 255))
+        # Add forehead
+        img[2:12, 12:36] = np.clip(np.random.randint(130, 150, (10, 24)), 0, 255)
 
-        # Add cheeks with safe random values
-        left_cheek_vals = np.random.randint(125, 145, (15, 10))
-        img[20:35, 5:15] = np.uint8(np.clip(left_cheek_vals, 0, 255))
+        # Add cheeks
+        img[20:35, 5:15] = np.clip(np.random.randint(125, 145, (15, 10)), 0, 255)   # Left cheek
+        img[20:35, 33:43] = np.clip(np.random.randint(125, 145, (15, 10)), 0, 255)  # Right cheek
 
-        right_cheek_vals = np.random.randint(125, 145, (15, 10))
-        img[20:35, 33:43] = np.uint8(np.clip(right_cheek_vals, 0, 255))
-
-        # Add nose bridge with safe random values
+        # Add nose bridge
         for x in range(20, 28):
-            nose_vals = np.random.randint(100, 120, (10,))
-            img[15:25, x] = np.uint8(np.clip(nose_vals, 0, 255))
+            img[15:25, x] = np.clip(np.random.randint(100, 120, (10,)), 0, 255)
 
-        # Final safety check
-        return np.uint8(np.clip(img, 0, 255))
+        return img
 
     def _add_emotion_features(self, img, emotion_idx):
         """Add emotion-specific facial features"""
