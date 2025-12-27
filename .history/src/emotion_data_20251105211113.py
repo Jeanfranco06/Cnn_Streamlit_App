@@ -7,12 +7,8 @@ from tensorflow.keras.utils import to_categorical
 import matplotlib.pyplot as plt
 
 class EmotionDataLoader:
-    def __init__(self, data_path=None):
-        if data_path is None:
-            # Path relative to this script's location
-            script_dir = os.path.dirname(__file__)
-            data_path = os.path.join(script_dir, '..', 'data', 'fer2013.csv')
-        self.data_path = os.path.abspath(data_path)
+    def __init__(self, data_path='data/fer2013.csv'):
+        self.data_path = data_path
         self.emotions = {
             0: 'angry',
             1: 'disgusted',
