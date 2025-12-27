@@ -7,17 +7,12 @@ from tensorflow.keras.utils import to_categorical
 import matplotlib.pyplot as plt
 
 class EmotionDataLoader:
-    def __init__(self, dataset='fer2013', data_path=None):
-        self.dataset = dataset
+    def __init__(self, data_path=None):
+        self.dataset = 'expw'
 
         if data_path is None:
             script_dir = os.path.dirname(__file__)
-            if dataset == 'fer2013':
-                data_path = os.path.join(script_dir, '..', 'data', 'fer2013.csv')
-            elif dataset == 'expw':
-                data_path = os.path.join(script_dir, '..', 'data', 'expw', 'label.lst')
-            else:
-                raise ValueError(f"Dataset '{dataset}' not supported. Use 'fer2013' or 'expw'")
+            data_path = os.path.join(script_dir, '..', 'data', 'expw', 'label.lst')
         self.data_path = os.path.abspath(data_path)
 
         # Emotion mappings (same for both datasets)

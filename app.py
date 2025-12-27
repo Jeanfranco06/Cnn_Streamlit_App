@@ -60,7 +60,7 @@ sns.set_palette("husl")
 
 # Título principal
 st.title("🧠 Clasificación con Redes Neuronales Convolucionales")
-st.markdown("### Aplicación interactiva para reconocimiento de dígitos MNIST y emociones faciales FER2013")
+st.markdown("### Aplicación interactiva para reconocimiento de dígitos MNIST y emociones faciales ExpW")
 st.markdown("---")
 
 # Sidebar con información del proyecto
@@ -1007,49 +1007,33 @@ def show_tab_content(dataset_name, cnn_class, input_shape):
         with tabs[3]:  # Predicciones
             show_predictions_section(data_loader, data, dataset_name, input_shape)
 
-# Función para cargar datos de emociones
+# Función para cargar datos de emociones (ExpW)
 @st.cache_data
-def load_emotion_data(dataset='fer2013'):
-    """Carga los datos del dataset seleccionado"""
+def load_emotion_data():
+    """Carga los datos del dataset ExpW"""
     try:
-        data_loader = EmotionDataLoader(dataset=dataset)
+        data_loader = EmotionDataLoader()
         data = data_loader.preprocess_data(max_samples=5000)  # Limitar muestras para Streamlit Cloud
 
         return data_loader, data
     except Exception as e:
-        st.error(f"Error al cargar los datos de {dataset.upper()}: {e}")
+        st.error(f"Error al cargar los datos de ExpW: {e}")
         return None, None
 
-# Función para mostrar contenido de emociones (FER2013/ExpW)
+# Función para mostrar contenido de emociones (ExpW)
 def show_emotion_content():
-    """Muestra el contenido para datasets de emociones"""
+    """Muestra el contenido para el dataset ExpW"""
 
-    # Selector de dataset
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        st.markdown("## 😊 Reconocimiento de Emociones")
-    with col2:
-        selected_dataset = st.selectbox(
-            "Seleccionar Dataset:",
-            ["FER2013", "ExpW"],
-            help="FER2013: 35k imágenes pequeñas | ExpW: 91k imágenes reales más complejas"
-        )
+    st.markdown("## 😊 ExpW - Reconocimiento de Emociones")
+    st.markdown("**ExpW**: Dataset Expression in-the-Wild con 91,793 imágenes reales de alta resolución tomadas de internet.")
 
-    # Información del dataset seleccionado
-    if selected_dataset == "FER2013":
-        st.markdown("**FER2013**: Dataset con 35,837 imágenes de expresiones faciales (48x48 píxeles) clasificadas en 7 emociones.")
-        dataset_desc = "35,837 imágenes de expresiones faciales en baja resolución"
-    else:  # ExpW
-        st.markdown("**ExpW**: Dataset Expression in-the-Wild con 91,793 imágenes reales de alta resolución tomadas de internet.")
-        dataset_desc = "91,793 imágenes faciales reales de alta resolución"
-
-    st.info(f"📊 **Características**: {dataset_desc} | 🎯 **Clases**: 7 emociones | 🔍 **Mejor para**: {'Precisión básica' if selected_dataset == 'FER2013' else 'Aplicaciones reales'}")
+    st.info("📊 **Características**: 91,793 imágenes faciales reales de alta resolución | 🎯 **Clases**: 7 emociones | 🔍 **Mejor para**: Aplicaciones reales")
 
     # Sub-pestañas
     tabs = st.tabs(["📊 Dataset", "🚀 Entrenamiento", "📊 Evaluación", "🔮 Predicciones"])
 
     # Estado de carga de datos
-    data_key = f"{selected_dataset.lower()}_data_loaded"
+    data_key = "expw_data_loaded"
     if data_key not in st.session_state:
         st.session_state[data_key] = False
 
@@ -1057,47 +1041,46 @@ def show_emotion_content():
     if not st.session_state[data_key]:
         col1, col2 = st.columns([1, 3])
         with col1:
-            button_text = f"📥 Cargar Datos {selected_dataset}"
-            if st.button(button_text, type="primary", key=f"load_{selected_dataset.lower()}_btn"):
-                with st.spinner(f"Cargando datos de {selected_dataset}..."):
+            if st.button("📥 Cargar Datos ExpW", type="primary", key="load_expw_btn"):
+                with st.spinner("Cargando datos de ExpW..."):
                     try:
-                        data_loader, data = load_emotion_data(dataset=selected_dataset.lower())
+                        data_loader, data = load_emotion_data()
 
                         if data_loader and data:
-                            st.session_state[f"{selected_dataset.lower()}_data_loader"] = data_loader
-                            st.session_state[f"{selected_dataset.lower()}_data"] = data
+                            st.session_state["expw_data_loader"] = data_loader
+                            st.session_state["expw_data"] = data
                             st.session_state[data_key] = True
-                            st.success(f"✅ Datos de {selected_dataset} cargados exitosamente!")
+                            st.success("✅ Datos de ExpW cargados exitosamente!")
                             st.rerun()
                         else:
-                            st.error(f"❌ Error al cargar los datos de {selected_dataset}")
+                            st.error("❌ Error al cargar los datos de ExpW")
                     except Exception as e:
                         st.error(f"❌ Error al cargar datos: {str(e)}")
             else:
-                st.info(f"💡 Haz clic en '{button_text}' para comenzar")
+                st.info("💡 Haz clic en 'Cargar Datos ExpW' para comenzar")
                 return
 
     # Si los datos están cargados, mostrar las pestañas
     if st.session_state[data_key]:
-        data_loader = st.session_state[f"{selected_dataset.lower()}_data_loader"]
-        data = st.session_state[f"{selected_dataset.lower()}_data"]
+        data_loader = st.session_state["expw_data_loader"]
+        data = st.session_state["expw_data"]
 
         with tabs[0]:  # Dataset
-            show_emotion_dataset_section(data_loader, data, selected_dataset)
+            show_emotion_dataset_section(data_loader, data, "ExpW")
 
         with tabs[1]:  # Entrenamiento
-            show_emotion_training_section(selected_dataset)
+            show_emotion_training_section("ExpW")
 
         with tabs[2]:  # Evaluación
-            eval_key = f"{selected_dataset.lower()}_eval_active"
-            if st.session_state.get(eval_key, False) or st.button(f"🔍 Ejecutar Evaluación {selected_dataset}", key=f"{selected_dataset.lower()}_eval_btn"):
+            eval_key = "expw_eval_active"
+            if st.session_state.get(eval_key, False) or st.button("🔍 Ejecutar Evaluación ExpW", key="expw_eval_btn"):
                 st.session_state[eval_key] = True
-                show_emotion_evaluation_section(data_loader, data, selected_dataset)
+                show_emotion_evaluation_section(data_loader, data, "ExpW")
             else:
                 st.info("Haz clic en 'Ejecutar Evaluación' para ver las métricas del modelo.")
 
         with tabs[3]:  # Predicciones
-            show_emotion_predictions_section(selected_dataset)
+            show_emotion_predictions_section("ExpW")
 
 # Función para mostrar sección de dataset de emociones
 def show_emotion_dataset_section(data_loader, data, dataset_name):
@@ -1775,7 +1758,7 @@ def show_emotion_predictions_section(selected_dataset):
         st.info("Sube una imagen facial para realizar una predicción de emoción.")
 
 # Crear pestañas principales para datasets
-main_tabs = st.tabs(["🔢 MNIST - Dígitos", "😊 Emociones (FER2013/ExpW)"])
+main_tabs = st.tabs(["🔢 MNIST - Dígitos", "😊 ExpW - Emociones"])
 
 with main_tabs[0]:  # MNIST
     show_tab_content("MNIST", MNISTCNN, (28, 28, 1))
@@ -1793,7 +1776,7 @@ with col1:
     st.markdown("""
     **Datasets:**
     - MNIST (70,000 imágenes de dígitos)
-    - FER2013 (35,837 imágenes de emociones)
+    - ExpW (91,793 imágenes de emociones reales)
     """)
 
 with col2:
