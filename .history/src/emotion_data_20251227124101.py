@@ -141,40 +141,6 @@ class EmotionDataLoader:
             'class_names': self.emotion_labels
         }
 
-        if missing_images > 0:
-            print(f"⚠️  {missing_images} imágenes no encontradas, {processed_count} procesadas correctamente")
-
-        X = np.array(X)
-        y = np.array(labels)
-
-        # Convertir etiquetas a categóricas
-        y = to_categorical(y, num_classes=len(self.emotions))
-
-        # Dividir en entrenamiento y prueba
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            X, y, test_size=test_size, random_state=42, stratify=labels
-        )
-
-        # Dividir aún más el entrenamiento en entrenamiento y validación
-        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
-            self.X_train, self.y_train, test_size=validation_split, random_state=42
-        )
-
-        print(f"ExpW - Muestras procesadas: {len(X)}")
-        print(f"Muestras de entrenamiento: {len(self.X_train)}")
-        print(f"Muestras de validación: {len(self.X_val)}")
-        print(f"Muestras de prueba: {len(self.X_test)}")
-
-        return {
-            'X_train': self.X_train,
-            'y_train': self.y_train,
-            'X_val': self.X_val,
-            'y_val': self.y_val,
-            'X_test': self.X_test,
-            'y_test': self.y_test,
-            'class_names': self.emotion_labels
-        }
-
     def _preprocess_expw(self, test_size=0.2, validation_split=0.1, max_samples=None):
         """Preprocesar datos ExpW"""
         print("Procesando imágenes ExpW...")

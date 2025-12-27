@@ -131,15 +131,15 @@ class EmotionDataLoader:
         print(f"Muestras de validación: {len(self.X_val)}")
         print(f"Muestras de prueba: {len(self.X_test)}")
 
-        return {
-            'X_train': self.X_train,
-            'y_train': self.y_train,
-            'X_val': self.X_val,
-            'y_val': self.y_val,
-            'X_test': self.X_test,
-            'y_test': self.y_test,
-            'class_names': self.emotion_labels
-        }
+            return {
+                'X_train': self.X_train,
+                'y_train': self.y_train,
+                'X_val': self.X_val,
+                'y_val': self.y_val,
+                'X_test': self.X_test,
+                'y_test': self.y_test,
+                'class_names': self.emotion_labels
+            }
 
         if missing_images > 0:
             print(f"⚠️  {missing_images} imágenes no encontradas, {processed_count} procesadas correctamente")
