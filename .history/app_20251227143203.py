@@ -1331,9 +1331,8 @@ def show_emotion_training_section(selected_dataset):
                     detail_text.text("Preparando generadores de datos y callbacks...")
 
                     # Obtener datos desde session state
-                    dataset_key = selected_dataset.lower().replace(" ", "")
-                    data_loader = st.session_state[f"{dataset_key}_data_loader"]
-                    data = st.session_state[f"{dataset_key}_data"]
+                    data_loader = st.session_state[f"{selected_dataset.lower()}_data_loader"]
+                    data = st.session_state[f"{selected_dataset.lower()}_data"]
 
                     epochs = st.session_state[f'{selected_dataset.lower()}_training_epochs']
                     batch_size = st.session_state[f'{selected_dataset.lower()}_training_batch_size']
