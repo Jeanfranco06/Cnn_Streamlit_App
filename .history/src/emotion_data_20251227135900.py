@@ -50,9 +50,9 @@ class EmotionDataLoader:
         if self.dataset == 'fer2013':
             self.data = pd.read_csv(self.data_path)
             print(f"FER2013 dataset cargado: {len(self.data)} muestras")
-        elif self.dataset == 'rafdb':
-            self.data = self._load_rafdb_data()
-            print(f"RAF-DB dataset cargado: {len(self.data)} muestras")
+        elif self.dataset == 'expw':
+            self.data = self._load_expw_data()
+            print(f"ExpW dataset cargado: {len(self.data)} muestras")
 
         return self.data
 
@@ -78,32 +78,6 @@ class EmotionDataLoader:
 
         return pd.DataFrame(data)
 
-    def _load_rafdb_data(self):
-        """Cargar datos del dataset RAF-DB"""
-        # RAF-DB usa un archivo list_patition_label.txt con formato específico
-        # Formato: partition/image_name.jpg emotion_label
-        data = []
-        with open(self.data_path, 'r') as f:
-            for line in f:
-                if line.strip():
-                    parts = line.strip().split()
-                    if len(parts) >= 2:
-                        image_path = parts[0]  # e.g., "train_00001.jpg"
-                        emotion_label = int(parts[1]) - 1  # RAF-DB labels are 1-7, convert to 0-6
-
-                        # Convert emotion labels from RAF-DB format to our format
-                        # RAF-DB: 1=Surprise, 2=Fear, 3=Disgust, 4=Happiness, 5=Sadness, 6=Anger, 7=Neutral
-                        # Our format: 0=Angry, 1=Disgust, 2=Fear, 3=Happy, 4=Sad, 5=Surprise, 6=Neutral
-                        rafdb_to_our = {1: 5, 2: 2, 3: 1, 4: 3, 5: 4, 6: 0, 7: 6}
-                        our_emotion_label = rafdb_to_our.get(emotion_label, emotion_label)
-
-                        data.append({
-                            'image_path': image_path,
-                            'emotion': our_emotion_label
-                        })
-
-        return pd.DataFrame(data)
-
     def preprocess_data(self, test_size=0.2, validation_split=0.1, max_samples=None):
         """Preprocesar los datos para entrenamiento"""
         if self.data is None:
@@ -111,8 +85,8 @@ class EmotionDataLoader:
 
         if self.dataset == 'fer2013':
             return self._preprocess_fer2013(test_size, validation_split, max_samples)
-        elif self.dataset == 'rafdb':
-            return self._preprocess_rafdb(test_size, validation_split, max_samples)
+        elif self.dataset == 'expw':
+            return self._preprocess_expw(test_size, validation_split, max_samples)
 
     def _preprocess_fer2013(self, test_size=0.2, validation_split=0.1, max_samples=None):
         """Preprocesar datos FER2013"""
@@ -736,170 +710,4 @@ class EmotionDataLoader:
             return self.X_train, self.y_train, self.X_val, self.y_val, self.X_test, self.y_test
         except FileNotFoundError:
             print("Datos procesados no encontrados. Por favor preprocese los datos primero.")
-        return None
-
-    def _preprocess_rafdb(self, test_size=0.2, validation_split=0.1, max_samples=None):
-        """Preprocesar datos RAF-DB"""
-        print("Procesando imágenes RAF-DB...")
-
-        # Directorio base de imágenes RAF-DB
-        rafdb_base_dir = os.path.dirname(self.data_path)
-
-        X = []
-        labels = []
-
-        # Limitar muestras si se especifica
-        data_to_process = self.data
-        if max_samples and len(data_to_process) > max_samples:
-            data_to_process = data_to_process.sample(max_samples, random_state=42)
-
-        # Procesar cada imagen
-        for idx, row in data_to_process.iterrows():
-            try:
-                # Construir ruta de imagen (RAF-DB tiene estructura train/test)
-                image_path = row['image_path']
-                if image_path.startswith('train_'):
-                    img_full_path = os.path.join(rafdb_base_dir, 'Image', 'aligned', image_path)
-                else:  # test images
-                    img_full_path = os.path.join(rafdb_base_dir, 'Image', 'aligned', image_path)
-
-                if not os.path.exists(img_full_path):
-                    continue
-
-                # Cargar imagen
-                image = cv2.imread(img_full_path)
-                if image is None:
-                    continue
-
-                # Convertir a escala de grises
-                gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-                # Redimensionar a 48x48
-                processed = cv2.resize(gray, (48, 48), interpolation=cv2.INTER_CUBIC)
-
-                # Normalizar
-                processed = processed.astype('float32') / 255.0
-                processed = np.expand_dims(processed, axis=-1)
-
-                X.append(processed)
-                labels.append(row['emotion'])
-
-            except Exception as e:
-                print(f"Error procesando imagen {row['image_path']}: {e}")
-                continue
-
-        if len(X) == 0:
-            print("❌ No se encontraron imágenes válidas en el dataset RAF-DB.")
-            print("💡 Para usar RAF-DB, descarga el dataset completo desde:")
-            print("   https://www.kaggle.com/datasets/shawon10/ckplus")
-            print("   O desde el sitio oficial de RAF-DB")
-            print("   Extrae los archivos a data/rafdb/")
-            print("   Asegúrate de que la estructura sea:")
-            print("   data/rafdb/")
-            print("   ├── EmoLabel/")
-            print("   │   └── list_patition_label.txt")
-            print("   └── Image/")
-            print("       └── aligned/")
-            print("           ├── train_00001.jpg")
-            print("           └── ...")
-
-            # Fallback a dataset sintético
-            print("\n🔄 Creando dataset sintético como alternativa...")
-            return self._create_synthetic_dataset(test_size, validation_split)
-
-        X = np.array(X)
-        y = np.array(labels)
-
-        # Convertir etiquetas a categóricas
-        y = to_categorical(y, num_classes=len(self.emotions))
-
-        # Dividir en entrenamiento y prueba
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            X, y, test_size=test_size, random_state=42, stratify=labels
-        )
-
-        # Dividir aún más el entrenamiento en entrenamiento y validación
-        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
-            self.X_train, self.y_train, test_size=validation_split, random_state=42
-        )
-
-        print(f"RAF-DB - Muestras procesadas: {len(X)}")
-        print(f"Muestras de entrenamiento: {len(self.X_train)}")
-        print(f"Muestras de validación: {len(self.X_val)}")
-        print(f"Muestras de prueba: {len(self.X_test)}")
-
-        return {
-            'X_train': self.X_train,
-            'y_train': self.y_train,
-            'X_val': self.X_val,
-            'y_val': self.y_val,
-            'X_test': self.X_test,
-            'y_test': self.y_test,
-            'class_names': self.emotion_labels
-        }
-
-    def _create_synthetic_dataset(self, test_size=0.2, validation_split=0.1):
-        """Crear dataset sintético cuando no hay imágenes reales"""
-        print("📝 Creando dataset sintético de prueba...")
-
-        # Dataset sintético simple
-        emotions = list(self.emotions.keys())
-        X = []
-        labels = []
-
-        samples_per_emotion = 100
-
-        for emotion_idx in emotions:
-            for i in range(samples_per_emotion):
-                # Crear patrón simple para cada emoción
-                img = np.full((48, 48), 128, dtype=np.uint8)
-
-                if emotion_idx == 0:  # Angry - líneas diagonales
-                    for j in range(48):
-                        if j < 48:
-                            img[j, j] = 50
-                elif emotion_idx == 1:  # Disgust - patrón de ajedrez
-                    img[::4, ::4] = 60
-                elif emotion_idx == 2:  # Fear - círculos
-                    cv2.circle(img, (24, 24), 15, 70, -1)
-                elif emotion_idx == 3:  # Happy - sonrisa
-                    cv2.ellipse(img, (24, 32), (12, 8), 0, 0, 180, 200, -1)
-                elif emotion_idx == 4:  # Sad - líneas horizontales bajas
-                    img[35:40, :] = 40
-                elif emotion_idx == 5:  # Surprise - estrella
-                    cv2.drawMarker(img, (24, 24), 220, cv2.MARKER_STAR, 20, 2)
-                elif emotion_idx == 6:  # Neutral - cruz
-                    cv2.line(img, (24, 10), (24, 38), 180, 2)
-                    cv2.line(img, (10, 24), (38, 24), 180, 2)
-
-                # Normalizar
-                img_normalized = img.astype('float32') / 255.0
-                img_normalized = np.expand_dims(img_normalized, axis=-1)
-
-                X.append(img_normalized)
-                labels.append(emotion_idx)
-
-        X = np.array(X)
-        y = np.array(labels)
-        y = to_categorical(y, num_classes=len(self.emotions))
-
-        # Dividir datos
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            X, y, test_size=test_size, random_state=42, stratify=labels
-        )
-
-        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
-            self.X_train, self.y_train, test_size=validation_split, random_state=42
-        )
-
-        print(f"✅ Dataset sintético creado: {len(X)} muestras")
-
-        return {
-            'X_train': self.X_train,
-            'y_train': self.y_train,
-            'X_val': self.X_val,
-            'y_val': self.y_val,
-            'X_test': self.X_test,
-            'y_test': self.y_test,
-            'class_names': self.emotion_labels
-        }
+            return None

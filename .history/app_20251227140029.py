@@ -60,7 +60,7 @@ sns.set_palette("husl")
 
 # Título principal
 st.title("🧠 Clasificación con Redes Neuronales Convolucionales")
-st.markdown("### Aplicación interactiva para reconocimiento de dígitos MNIST y emociones faciales RAF-DB")
+st.markdown("### Aplicación interactiva para reconocimiento de dígitos MNIST y emociones faciales ExpW")
 st.markdown("---")
 
 # Sidebar con información del proyecto
@@ -1776,7 +1776,7 @@ with col1:
     st.markdown("""
     **Datasets:**
     - MNIST (70,000 imágenes de dígitos)
-    - RAF-DB (30,000 imágenes de emociones reales)
+    - ExpW (91,793 imágenes de emociones reales)
     """)
 
 with col2:

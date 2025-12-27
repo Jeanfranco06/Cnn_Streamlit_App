@@ -1776,7 +1776,7 @@ with col1:
     st.markdown("""
     **Datasets:**
     - MNIST (70,000 imágenes de dígitos)
-    - RAF-DB (30,000 imágenes de emociones reales)
+    - ExpW (91,793 imágenes de emociones reales)
     """)
 
 with col2:

@@ -60,7 +60,7 @@ sns.set_palette("husl")
 
 # Título principal
 st.title("🧠 Clasificación con Redes Neuronales Convolucionales")
-st.markdown("### Aplicación interactiva para reconocimiento de dígitos MNIST y emociones faciales RAF-DB")
+st.markdown("### Aplicación interactiva para reconocimiento de dígitos MNIST y emociones faciales ExpW")
 st.markdown("---")
 
 # Sidebar con información del proyecto
@@ -1007,17 +1007,17 @@ def show_tab_content(dataset_name, cnn_class, input_shape):
         with tabs[3]:  # Predicciones
             show_predictions_section(data_loader, data, dataset_name, input_shape)
 
-# Función para cargar datos de emociones (RAF-DB)
+# Función para cargar datos de emociones (ExpW)
 @st.cache_data
 def load_emotion_data():
-    """Carga los datos del dataset RAF-DB"""
+    """Carga los datos del dataset ExpW"""
     try:
         data_loader = EmotionDataLoader()
         data = data_loader.preprocess_data(max_samples=5000)  # Limitar muestras para Streamlit Cloud
 
         return data_loader, data
     except Exception as e:
-        st.error(f"Error al cargar los datos de RAF-DB: {e}")
+        st.error(f"Error al cargar los datos de ExpW: {e}")
         return None, None
 
 # Función para mostrar contenido de emociones (ExpW)
@@ -1776,7 +1776,7 @@ with col1:
     st.markdown("""
     **Datasets:**
     - MNIST (70,000 imágenes de dígitos)
-    - RAF-DB (30,000 imágenes de emociones reales)
+    - ExpW (91,793 imágenes de emociones reales)
     """)
 
 with col2:
