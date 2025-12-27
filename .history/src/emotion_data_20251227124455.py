@@ -364,98 +364,84 @@ class EmotionDataLoader:
             for y in range(20, 30, 2):
                 for x in range(18, 30, 2):
                     if np.random.random() > 0.3:
-                        ny, nx = y + np.random.randint(-1, 2), x + np.random.randint(-1, 2)
-                        if 0 <= ny < 48 and 0 <= nx < 48:
-                            img[ny, nx] = np.clip(np.random.randint(95, 115), 0, 255)
+                        img[y + np.random.randint(-1, 2), x + np.random.randint(-1, 2)] = np.random.randint(95, 115)
             # Raised upper lip
-            img[28:32, 20:28] = np.clip(np.random.randint(85, 105, (4, 8)), 0, 255)
+            img[28:32, 20:28] = np.random.randint(85, 105, (4, 8))
             # Narrowed eyes
-            img[10:16, 10:16] = np.clip(np.random.randint(100, 120, (6, 6)), 0, 255)  # Left eye narrower
-            img[10:16, 32:38] = np.clip(np.random.randint(100, 120, (6, 6)), 0, 255)  # Right eye narrower
+            img[10:16, 10:16] = np.random.randint(100, 120, (6, 6))  # Left eye narrower
+            img[10:16, 32:38] = np.random.randint(100, 120, (6, 6))  # Right eye narrower
 
         elif emotion_idx == 2:  # Fear - wide eyes, raised brows, open mouth
             # Wide open eyes
-            img[8:18, 8:18] = np.clip(np.random.randint(180, 220, (10, 10)), 0, 255)   # Left eye wide
-            img[8:18, 30:40] = np.clip(np.random.randint(180, 220, (10, 10)), 0, 255)  # Right eye wide
+            img[8:18, 8:18] = np.random.randint(180, 220, (10, 10))   # Left eye wide
+            img[8:18, 30:40] = np.random.randint(180, 220, (10, 10))  # Right eye wide
             # Very raised eyebrows
             for x in range(5, 43):
                 height_variation = np.random.randint(2, 6)
-                ny = 3 + np.random.randint(0, height_variation)
-                if 0 <= ny < 48:
-                    img[ny, x] = np.clip(np.random.randint(140, 170), 0, 255)
+                img[3 + np.random.randint(0, height_variation), x] = np.random.randint(140, 170)
             # Open mouth with tension
-            img[30:40, 16:32] = np.clip(np.random.randint(60, 90, (10, 16)), 0, 255)
+            img[30:40, 16:32] = np.random.randint(60, 90, (10, 16))
             # Wide mouth corners
-            img[32:36, 14:18] = np.clip(np.random.randint(70, 100, (4, 4)), 0, 255)  # Left corner
-            img[32:36, 30:34] = np.clip(np.random.randint(70, 100, (4, 4)), 0, 255)  # Right corner
+            img[32:36, 14:18] = np.random.randint(70, 100, (4, 4))  # Left corner
+            img[32:36, 30:34] = np.random.randint(70, 100, (4, 4))  # Right corner
 
         elif emotion_idx == 3:  # Happy - smiling eyes, upturned mouth, raised cheeks
             # Smiling eyes - slight crinkle at corners
-            img[12:15, 6:10] = np.clip(np.random.randint(130, 150, (3, 4)), 0, 255)   # Left eye crinkle
-            img[12:15, 38:42] = np.clip(np.random.randint(130, 150, (3, 4)), 0, 255)  # Right eye crinkle
+            img[12:15, 6:10] = np.random.randint(130, 150, (3, 4))   # Left eye crinkle
+            img[12:15, 38:42] = np.random.randint(130, 150, (3, 4))  # Right eye crinkle
             # Big smile curve
             for x in range(15, 33):
                 y_offset = int(6 * np.sin((x - 15) * np.pi / 18)) + np.random.randint(-1, 2)
-                ny = 28 + y_offset
-                if 0 <= ny < 48:
-                    img[ny, x] = np.clip(np.random.randint(170, 210), 0, 255)
-                    # Add smile thickness
-                    if np.random.random() > 0.4:
-                        ny2 = 29 + y_offset
-                        if 0 <= ny2 < 48:
-                            img[ny2, x] = np.clip(np.random.randint(150, 190), 0, 255)
+                img[28 + y_offset, x] = np.random.randint(170, 210)
+                # Add smile thickness
+                if np.random.random() > 0.4:
+                    img[29 + y_offset, x] = np.random.randint(150, 190)
             # Raised cheeks
-            img[25:32, 8:15] = np.clip(np.random.randint(145, 165, (7, 7)), 0, 255)   # Left cheek
-            img[25:32, 33:40] = np.clip(np.random.randint(145, 165, (7, 7)), 0, 255)  # Right cheek
+            img[25:32, 8:15] = np.random.randint(145, 165, (7, 7))   # Left cheek
+            img[25:32, 33:40] = np.random.randint(145, 165, (7, 7))  # Right cheek
 
         elif emotion_idx == 4:  # Sad - downturned mouth, drooping eyes, lowered brows
             # Downturned mouth
             for x in range(15, 33):
                 y_offset = int(-4 * np.sin((x - 15) * np.pi / 18)) + np.random.randint(-1, 2)
-                ny = 34 + y_offset
-                if 0 <= ny < 48:
-                    img[ny, x] = np.clip(np.random.randint(120, 150), 0, 255)
+                img[34 + y_offset, x] = np.random.randint(120, 150)
             # Drooping eyes
-            img[14:20, 10:16] = np.clip(np.random.randint(100, 125, (6, 6)), 0, 255)  # Left eye droop
-            img[14:20, 32:38] = np.clip(np.random.randint(100, 125, (6, 6)), 0, 255)  # Right eye droop
+            img[14:20, 10:16] = np.random.randint(100, 125, (6, 6))  # Left eye droop
+            img[14:20, 32:38] = np.random.randint(100, 125, (6, 6))  # Right eye droop
             # Lowered brows
-            img[10:14, 8:18] = np.clip(np.random.randint(90, 110, (4, 10)), 0, 255)   # Left brow
-            img[10:14, 30:40] = np.clip(np.random.randint(90, 110, (4, 10)), 0, 255)  # Right brow
+            img[10:14, 8:18] = np.random.randint(90, 110, (4, 10))   # Left brow
+            img[10:14, 30:40] = np.random.randint(90, 110, (4, 10))  # Right brow
             # Sad mouth corners
-            img[30:34, 12:16] = np.clip(np.random.randint(100, 120, (4, 4)), 0, 255)  # Left corner down
-            img[30:34, 32:36] = np.clip(np.random.randint(100, 120, (4, 4)), 0, 255)  # Right corner down
+            img[30:34, 12:16] = np.random.randint(100, 120, (4, 4))  # Left corner down
+            img[30:34, 32:36] = np.random.randint(100, 120, (4, 4))  # Right corner down
 
         elif emotion_idx == 5:  # Surprise - wide open eyes, round mouth, raised brows
             # Maximum wide eyes
-            img[6:20, 6:18] = np.clip(np.random.randint(200, 240, (14, 12)), 0, 255)   # Left eye very wide
-            img[6:20, 30:42] = np.clip(np.random.randint(200, 240, (14, 12)), 0, 255)  # Right eye very wide
+            img[6:20, 6:18] = np.random.randint(200, 240, (14, 12))   # Left eye very wide
+            img[6:20, 30:42] = np.random.randint(200, 240, (14, 12))  # Right eye very wide
             # Round open mouth
             center_y, center_x = 36, 24
             for y in range(28, 44):
                 for x in range(16, 32):
                     dist = np.sqrt((y - center_y)**2 + (x - center_x)**2)
                     if dist <= 8:
-                        img[y, x] = np.clip(np.random.randint(40, 80), 0, 255)
+                        img[y, x] = np.random.randint(40, 80)
             # Maximally raised brows
             for x in range(3, 45):
                 height_variation = np.random.randint(4, 8)
-                ny = 2 + np.random.randint(0, height_variation)
-                if 0 <= ny < 48:
-                    img[ny, x] = np.clip(np.random.randint(150, 180), 0, 255)
+                img[2 + np.random.randint(0, height_variation), x] = np.random.randint(150, 180)
 
         elif emotion_idx == 6:  # Neutral - balanced, relaxed features
             # Balanced eyes
-            img[10:16, 10:16] = np.clip(np.random.randint(150, 175, (6, 6)), 0, 255)  # Left eye
-            img[10:16, 32:38] = np.clip(np.random.randint(150, 175, (6, 6)), 0, 255)  # Right eye
+            img[10:16, 10:16] = np.random.randint(150, 175, (6, 6))  # Left eye
+            img[10:16, 32:38] = np.random.randint(150, 175, (6, 6))  # Right eye
             # Neutral mouth - slight natural curve
             for x in range(18, 30):
                 y_offset = int(2 * np.sin((x - 18) * np.pi / 12))
-                ny = 32 + y_offset
-                if 0 <= ny < 48:
-                    img[ny, x] = np.clip(np.random.randint(130, 155), 0, 255)
+                img[32 + y_offset, x] = np.random.randint(130, 155)
             # Balanced brows
-            img[6:10, 8:18] = np.clip(np.random.randint(120, 140, (4, 10)), 0, 255)   # Left brow
-            img[6:10, 30:40] = np.clip(np.random.randint(120, 140, (4, 10)), 0, 255)  # Right brow
+            img[6:10, 8:18] = np.random.randint(120, 140, (4, 10))   # Left brow
+            img[6:10, 30:40] = np.random.randint(120, 140, (4, 10))  # Right brow
 
         return img
 
