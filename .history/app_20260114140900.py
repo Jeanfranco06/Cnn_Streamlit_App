@@ -558,6 +558,14 @@ def show_training_section(cnn_class, data_loader, data, dataset_name, input_shap
 # Función para mostrar sección de evaluación
 def show_evaluation_section(data_loader, data, dataset_name):
     """Muestra la sección de evaluación del modelo"""
+    # Limpiar cualquier contenido residual de otras secciones
+    st.empty()
+
+    # Limpiar estado de entrenamiento para evitar conflictos
+    training_key = f'{dataset_name.lower()}_training_started'
+    if training_key in st.session_state:
+        del st.session_state[training_key]
+
     st.header(f"📊 Evaluación del Modelo - {dataset_name}")
 
     # Seleccionar tipo de modelo para evaluación
@@ -1002,7 +1010,13 @@ def show_tab_content(dataset_name, cnn_class, input_shape):
             show_training_section(cnn_class, data_loader, data, dataset_name, input_shape)
 
         with tabs[2]:  # Evaluación
-            show_evaluation_section(data_loader, data, dataset_name)
+            # Lazy loading - only run evaluation when tab is active
+            eval_key = f"{dataset_name.lower()}_eval_active"
+            if st.session_state.get(eval_key, False) or st.button(f"🔍 Ejecutar Evaluación {dataset_name}", key=f"{dataset_name.lower()}_eval_btn"):
+                st.session_state[eval_key] = True
+                show_evaluation_section(data_loader, data, dataset_name)
+            else:
+                st.info("Haz clic en 'Ejecutar Evaluación' para ver las métricas del modelo.")
 
         with tabs[3]:  # Predicciones
             show_predictions_section(data_loader, data, dataset_name, input_shape)
@@ -1703,28 +1717,26 @@ def show_emotion_predictions_section(selected_dataset):
                 model_path = None
 
                 if os.path.exists(dataset_models_dir):
-                    # Buscar modelo entrenado del tipo seleccionado
-                    trained_model = f"{selected_emotion_model}_trained.keras"
+                    # Try trained model first with dataset name
+                    trained_model = f"{selected_emotion_model}_{selected_dataset.lower()}_trained.keras"
                     trained_path = os.path.join(dataset_models_dir, trained_model)
 
                     if os.path.exists(trained_path):
                         model_path = trained_path
                     else:
-                        # Fallback a modelo básico pre-entrenado
-                        basic_model = "emotion_model.h5"
-                        basic_path = os.path.join(dataset_models_dir, basic_model)
-                        if os.path.exists(basic_path):
-                            model_path = basic_path
-                            st.info(f"Modelo {selected_emotion_model} no disponible. Usando modelo básico pre-entrenado.")
+                        # Fallback to trained model without dataset name
+                        fallback_trained = f"{selected_emotion_model}_trained.keras"
+                        fallback_path = os.path.join(dataset_models_dir, fallback_trained)
+                        if os.path.exists(fallback_path):
+                            model_path = fallback_path
+                            st.info(f"No se encontró modelo {selected_emotion_model} entrenado para {selected_dataset}. Usando modelo general.")
                         else:
-                            # Último fallback a modelo mejorado
-                            improved_model = "emotion_model_improved.h5"
-                            improved_path = os.path.join(dataset_models_dir, improved_model)
-                            if os.path.exists(improved_path):
-                                model_path = improved_path
-                                st.info(f"No se encontraron modelos entrenados. Usando modelo mejorado.")
-                            else:
-                                st.warning(f"No se encontró ningún modelo para emociones.")
+                            # Last fallback to basic model
+                            basic_model = "emotion_model.h5"
+                            basic_path = os.path.join(dataset_models_dir, basic_model)
+                            if os.path.exists(basic_path):
+                                model_path = basic_path
+                                st.info(f"No se encontró modelo {selected_emotion_model} entrenado. Usando modelo básico.")
 
                 if model_path:
                     classifier = EmotionClassifier(model_path=model_path)
