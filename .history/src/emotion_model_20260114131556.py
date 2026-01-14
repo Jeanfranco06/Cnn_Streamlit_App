@@ -245,6 +245,7 @@ class EmotionClassifier:
         # Entrenar el modelo
         self.history = self.model.fit(
             datagen.flow(X_train, y_train, batch_size=batch_size),
+            steps_per_epoch=len(X_train) // batch_size,
             epochs=epochs,
             validation_data=(X_val, y_val),
             callbacks=all_callbacks,

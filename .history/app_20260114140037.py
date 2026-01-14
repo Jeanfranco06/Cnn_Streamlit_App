@@ -604,27 +604,27 @@ def show_evaluation_section(data_loader, data, dataset_name):
     dataset_models_dir = os.path.join("models", "mnist")
     model_path = None
 
-                        if os.path.exists(dataset_models_dir):
-                            # Buscar modelo entrenado del tipo seleccionado
-                            trained_model = f"{selected_model_type}_trained.keras"
-                            trained_path = os.path.join(dataset_models_dir, trained_model)
+    if os.path.exists(dataset_models_dir):
+        # Buscar modelo entrenado del tipo seleccionado
+        trained_model = f"{selected_model_type}_trained.keras"
+        trained_path = os.path.join(dataset_models_dir, trained_model)
 
-                            if os.path.exists(trained_path):
-                                model_path = trained_path
-                            else:
-                                # Para residual, usar basic como fallback ya que no existe residual entrenado
-                                if selected_model_type == "residual":
-                                    fallback_model = "basic_trained.keras"
-                                    fallback_path = os.path.join(dataset_models_dir, fallback_model)
-                                    if os.path.exists(fallback_path):
-                                        model_path = fallback_path
-                                        st.info(f"Modelo residual no disponible. Usando modelo básico entrenado.")
-                                    else:
-                                        st.error(f"No se encontraron modelos entrenados para {dataset_name}.")
-                                else:
-                                    st.warning(f"No se encontró modelo {selected_model_type} entrenado. Los modelos disponibles son: basic, advanced.")
-                        else:
-                            st.error(f"Directorio de modelos para {dataset_name} no encontrado.")
+        if os.path.exists(trained_path):
+            model_path = trained_path
+        else:
+            # Para residual, usar basic como fallback ya que no existe residual entrenado
+            if selected_model_type == "residual":
+                fallback_model = "basic_trained.keras"
+                fallback_path = os.path.join(dataset_models_dir, fallback_model)
+                if os.path.exists(fallback_path):
+                    model_path = fallback_path
+                    st.info(f"Modelo residual no disponible. Usando modelo básico entrenado.")
+                else:
+                    st.error(f"No se encontraron modelos entrenados para {dataset_name}.")
+            else:
+                st.warning(f"No se encontró modelo {selected_model_type} entrenado. Los modelos disponibles son: basic, advanced.")
+    else:
+        st.error(f"Directorio de modelos para {dataset_name} no encontrado.")
 
     if model_path is not None and os.path.exists(model_path):
         cnn = load_model(model_path)
