@@ -65,57 +65,57 @@ class EmotionDataLoader:
                 print(f"Directorio no encontrado: {base_dir}")
                 continue
 
-            # Procesar cada directorio de emoción en este base_dir
-            for emotion_name, emotion_idx in emotion_map.items():
-                emotion_dir = os.path.join(base_dir, emotion_name)
-                if not os.path.exists(emotion_dir):
-                    print(f"Directorio no encontrado: {emotion_dir}")
-                    continue
+        # Procesar cada directorio de emoción
+        for emotion_name, emotion_idx in emotion_map.items():
+            emotion_dir = os.path.join(test_base_dir, emotion_name)
+            if not os.path.exists(emotion_dir):
+                print(f"Directorio no encontrado: {emotion_dir}")
+                continue
 
-                print(f"Procesando emoción {emotion_name} (índice {emotion_idx}) en {base_dir}...")
+            print(f"Procesando emoción {emotion_name} (índice {emotion_idx})...")
 
-                # Obtener lista de archivos de imagen
-                image_files = [f for f in os.listdir(emotion_dir)
-                              if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+            # Obtener lista de archivos de imagen
+            image_files = [f for f in os.listdir(emotion_dir)
+                          if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
 
-                if len(image_files) == 0:
-                    print(f"No se encontraron imágenes en {emotion_dir}")
-                    continue
+            if len(image_files) == 0:
+                print(f"No se encontraron imágenes en {emotion_dir}")
+                continue
 
-                # Limitar imágenes por emoción si se especifica max_samples
-                if max_samples:
-                    max_per_emotion = max_samples // len(emotion_map)
-                    if len(image_files) > max_per_emotion:
-                        image_files = image_files[:max_per_emotion]
+            # Limitar imágenes por emoción si se especifica max_samples
+            if max_samples:
+                max_per_emotion = max_samples // len(emotion_map)
+                if len(image_files) > max_per_emotion:
+                    image_files = image_files[:max_per_emotion]
 
-                # Procesar cada imagen
-                for image_file in image_files:
-                    try:
-                        img_path = os.path.join(emotion_dir, image_file)
-                        image = cv2.imread(img_path)
+            # Procesar cada imagen
+            for image_file in image_files:
+                try:
+                    img_path = os.path.join(emotion_dir, image_file)
+                    image = cv2.imread(img_path)
 
-                        if image is None:
-                            continue
-
-                        # Convertir a escala de grises
-                        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-                        # Redimensionar a 48x48
-                        processed = cv2.resize(gray, (48, 48), interpolation=cv2.INTER_CUBIC)
-
-                        # Normalizar
-                        processed = processed.astype('float32') / 255.0
-                        processed = np.expand_dims(processed, axis=-1)
-
-                        X.append(processed)
-                        labels.append(emotion_idx)
-
-                    except Exception as e:
-                        print(f"Error procesando {image_file}: {e}")
+                    if image is None:
                         continue
 
+                    # Convertir a escala de grises
+                    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+                    # Redimensionar a 48x48
+                    processed = cv2.resize(gray, (48, 48), interpolation=cv2.INTER_CUBIC)
+
+                    # Normalizar
+                    processed = processed.astype('float32') / 255.0
+                    processed = np.expand_dims(processed, axis=-1)
+
+                    X.append(processed)
+                    labels.append(emotion_idx)
+
+                except Exception as e:
+                    print(f"Error procesando {image_file}: {e}")
+                    continue
+
         if len(X) == 0:
-            raise ValueError("❌ No se pudieron cargar imágenes reales de los directorios data/train/ y data/test/")
+            raise ValueError("❌ No se pudieron cargar imágenes reales del directorio data/test/")
 
         X = np.array(X)
         y = np.array(labels)

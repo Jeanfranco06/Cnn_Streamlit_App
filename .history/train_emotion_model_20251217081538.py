@@ -15,20 +15,20 @@ def train_improved_emotion_model():
 
     # Crear modelo mejorado
     classifier = EmotionClassifier()
-    classifier.model = classifier.create_model(model_type='advanced')  # Usar arquitectura avanzada
+    classifier.model = classifier.create_model(model_type='basic')  # Usar arquitectura mejorada
     classifier.compile_model(learning_rate=1e-3)  # Learning rate más alto inicialmente
 
     # Calcular pesos de clase para datos desbalanceados
     class_weights = data_loader.get_class_weights()
     print(f"Pesos de clase: {class_weights}")
 
-    # Entrenar modelo con más epochs y mejor configuración
+    # Entrenar modelo
     history = classifier.train(
         X_train=data['X_train'],
         y_train=data['y_train'],
         X_val=data['X_val'],
         y_val=data['y_val'],
-        epochs=100,  # Más epochs
+        epochs=50,
         batch_size=64,
         class_weights=class_weights,
         save_path='models/emotion/emotion_model_improved.h5'

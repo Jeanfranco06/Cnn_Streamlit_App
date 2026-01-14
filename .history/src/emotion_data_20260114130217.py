@@ -115,7 +115,7 @@ class EmotionDataLoader:
                         continue
 
         if len(X) == 0:
-            raise ValueError("❌ No se pudieron cargar imágenes reales de los directorios data/train/ y data/test/")
+            raise ValueError("❌ No se pudieron cargar imágenes reales del directorio data/test/")
 
         X = np.array(X)
         y = np.array(labels)
